@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Intelligence Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Presentation Intelligence Tool</h1>
+            <p class="subtitle">Transform technical presentations into strategic pre-sales intelligence</p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="messages">
+                    {% for category, message in messages %}
+                        <div class="message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('analyze') }}" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="title">Presentation Title <span class="required">*</span></label>
+                <input type="text" id="title" name="title" required maxlength="200"
+                       placeholder="Enter the presentation title">
+            </div>
+
+            <div class="form-group">
+                <label for="presenters">Presenter Names <span class="required">*</span></label>
+                <input type="text" id="presenters" name="presenters" required maxlength="300"
+                       placeholder="e.g., Jane Smith, John Doe">
+            </div>
+
+            <div class="form-group">
+                <label for="github_url">GitHub Repository URL <span class="optional">(Optional)</span></label>
+                <input type="url" id="github_url" name="github_url" maxlength="500"
+                       placeholder="https://github.com/username/repo"
+                       pattern="https://github\.com/.*">
+                <small class="help-text">Link to lab guides, code samples, or related materials</small>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Your Notes <span class="required">*</span></label>
+                <textarea id="notes" name="notes" required maxlength="2000" rows="6"
+                          placeholder="What did you find interesting? Key takeaways? Pain points discussed?"></textarea>
+                <small class="help-text">Share your observations and what stood out to you</small>
+            </div>
+
+            <div class="form-group">
+                <label for="deck">Upload Slide Deck <span class="required">*</span></label>
+                <input type="file" id="deck" name="deck" accept=".pdf,.pptx" required>
+                <small class="help-text">PDF or PPTX format, maximum 50MB</small>
+            </div>
+
+            <button type="submit" class="btn-primary">Analyze Presentation</button>
+        </form>
+
+        <footer>
+            <p>Powered by Claude AI (Anthropic)</p>
+        </footer>
+    </div>
+</body>
+</html>

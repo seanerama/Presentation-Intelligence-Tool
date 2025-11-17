@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results - Presentation Intelligence Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Presentation Analysis Results</h1>
+        </header>
+
+        <div class="metadata">
+            <h2>{{ metadata.title }}</h2>
+            <p><strong>Presenters:</strong> {{ metadata.presenters }}</p>
+            <p><strong>Analyzed:</strong> {{ metadata.date }} at {{ metadata.time }}</p>
+            {% if metadata.github_url %}
+            <p><strong>GitHub Repository:</strong> <a href="{{ metadata.github_url }}" target="_blank">{{ metadata.github_url }}</a></p>
+            {% endif %}
+        </div>
+
+        <div class="download-buttons">
+            <a href="{{ url_for('download', file_type='md', filename=markdown_filename) }}" class="btn-download">
+                Download Markdown
+            </a>
+            <a href="{{ url_for('download', file_type='pdf', filename=pdf_filename) }}" class="btn-download">
+                Download PDF
+            </a>
+        </div>
+
+        <div class="analysis-content">
+            {{ analysis | safe }}
+        </div>
+
+        <div class="download-buttons">
+            <a href="{{ url_for('download', file_type='md', filename=markdown_filename) }}" class="btn-download">
+                Download Markdown
+            </a>
+            <a href="{{ url_for('download', file_type='pdf', filename=pdf_filename) }}" class="btn-download">
+                Download PDF
+            </a>
+        </div>
+
+        <div class="actions">
+            <a href="{{ url_for('index') }}" class="btn-secondary">Analyze Another Presentation</a>
+        </div>
+
+        <footer>
+            <p>Powered by Claude AI (Anthropic)</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple markdown-like rendering for the analysis content
+        document.addEventListener('DOMContentLoaded', function() {
+            const content = document.querySelector('.analysis-content');
+            if (content) {
+                let html = content.textContent;
+
+                // Convert markdown-style headers
+                html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+                html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+                html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+                // Convert line breaks
+                html = html.replace(/\n\n/g, '</p><p>');
+
+                // Convert lists
+                html = html.replace(/^\- (.*)$/gim, '<li>$1</li>');
+                html = html.replace(/^\d+\. (.*)$/gim, '<li>$1</li>');
+
+                // Wrap in paragraph tags
+                html = '<p>' + html + '</p>';
+
+                // Fix consecutive list items
+                html = html.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>');
+                html = html.replace(/<\/ul><ul>/g, '');
+
+                content.innerHTML = html;
+            }
+        });
+    </script>
+</body>
+</html>
