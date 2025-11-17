@@ -171,7 +171,8 @@ def generate_pdf(markdown_content: str, output_dir: str, filename: str) -> str:
 
         # Generate PDF
         pdf_path = os.path.join(output_dir, f"{filename}.pdf")
-        HTML(string=styled_html).write_pdf(pdf_path)
+        html_doc = HTML(string=styled_html)
+        html_doc.write_pdf(pdf_path)
 
         logger.info(f"PDF file saved: {pdf_path}")
         return pdf_path

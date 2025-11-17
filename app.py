@@ -95,8 +95,18 @@ def analyze():
         logger.info("Extracting content from presentation...")
         extracted = extract_content(file_path, file_ext)
 
-        if 'error' in extracted or not extracted.get('text'):
-            flash('Could not extract content from presentation. The file may be corrupted.', 'error')
+        if 'error' in extracted:
+            error_msg = extracted.get('error', 'Unknown error')
+            logger.error(f"Extraction error: {error_msg}")
+            flash(f'Could not extract content from presentation: {error_msg}', 'error')
+            # Clean up uploaded file
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return redirect(url_for('index'))
+
+        if not extracted.get('text'):
+            logger.warning(f"No text extracted. Pages/Slides: {extracted.get('pages', extracted.get('slides', 0))}, Has images: {extracted.get('has_images', False)}")
+            flash('No text could be extracted from the presentation. The file may be image-based (scanned slides) or empty.', 'error')
             # Clean up uploaded file
             if os.path.exists(file_path):
                 os.remove(file_path)

@@ -1,0 +1,17 @@
+[project]
+name = "summerizer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40.0",
+    "flask==3.0.0",
+    "markdown2==2.4.10",
+    "pillow==10.0.0",
+    "pymupdf>=1.24.0",
+    "python-dotenv==1.0.0",
+    "python-pptx==0.6.23",
+    "weasyprint>=61.0",
+    "werkzeug==3.0.0",
+]

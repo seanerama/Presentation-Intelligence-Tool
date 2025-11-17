@@ -28,6 +28,10 @@ venv/
 ENV/
 env/
 .venv/
+summerizer-env/
+
+# UV
+uv.lock
 
 # IDE
 .idea/

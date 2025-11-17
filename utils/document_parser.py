@@ -27,13 +27,19 @@ def extract_from_pdf(file_path: str) -> Dict[str, any]:
         }
     """
     try:
+        logger.info(f"Opening PDF file: {file_path}")
         doc = fitz.open(file_path)
         text_content = []
         has_images = False
+        total_pages = len(doc)
+
+        logger.info(f"PDF has {total_pages} pages")
 
         for page_num, page in enumerate(doc, 1):
             # Extract text from page
             page_text = page.get_text()
+            logger.debug(f"Page {page_num} text length: {len(page_text)}")
+
             if page_text.strip():
                 text_content.append(f"--- Page {page_num} ---\n{page_text}")
 
@@ -41,20 +47,23 @@ def extract_from_pdf(file_path: str) -> Dict[str, any]:
             image_list = page.get_images()
             if image_list:
                 has_images = True
+                logger.debug(f"Page {page_num} has {len(image_list)} images")
 
         doc.close()
 
+        total_text = '\n\n'.join(text_content)
+        logger.info(f"Successfully extracted {len(total_text)} characters from {total_pages} pages")
+
         result = {
-            'text': '\n\n'.join(text_content),
-            'pages': len(doc),
+            'text': total_text,
+            'pages': total_pages,
             'has_images': has_images
         }
 
-        logger.info(f"Successfully extracted text from PDF: {len(doc)} pages")
         return result
 
     except Exception as e:
-        logger.error(f"Error extracting PDF content: {str(e)}")
+        logger.error(f"Error extracting PDF content: {str(e)}", exc_info=True)
         return {
             'text': '',
             'pages': 0,
