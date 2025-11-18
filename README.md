@@ -213,20 +213,22 @@ The tool supports customizable analysis prompts for different roles and perspect
 
 ```mermaid
 graph LR
-    subgraph "Prompt Templates (prompts/)"
+    subgraph Templates["Prompt Templates (prompts/)"]
         P1[presales_engineer.json]
         P2[network_engineer.json]
         P3[security_analyst.json]
         P4[custom_template.json]
     end
 
-    subgraph "Prompt Loader"
+    subgraph Loader["Prompt Loader"]
         LOAD[prompt_loader.py]
-        LOAD --> PARSE[Parse JSON Template]
-        PARSE --> VARS[Replace Variables<br/>{content_type}<br/>{resources_note}<br/>{resource_focus}]
+        PARSE[Parse JSON Template]
+        VARS[Replace Variables]
+        LOAD --> PARSE
+        PARSE --> VARS
     end
 
-    subgraph "Analysis Context"
+    subgraph Context["Analysis Context"]
         TITLE[Title]
         PRES[Presenters]
         NOTES[User Notes]
@@ -235,7 +237,7 @@ graph LR
         GH[GitHub URL]
     end
 
-    subgraph "AI Prompt"
+    subgraph Prompt["AI Prompt"]
         ROLE[Role Definition]
         TASK[Task Description]
         CONTENT[Content Sections]
@@ -412,29 +414,29 @@ summerizer/
 
 ```mermaid
 graph TB
-    subgraph "Client Layer"
+    subgraph Client["Client Layer"]
         WEB[Web Browser]
-        API[API Clients<br/>Python/Bash/cURL]
+        API[API Clients]
     end
 
-    subgraph "Flask Application (app.py)"
+    subgraph Flask["Flask Application"]
         ROUTES[Routes & Endpoints]
-        WEB_ROUTES[Web Routes<br/>/analyze, /download]
-        API_ROUTES[REST API<br/>/api/v1/analyze, /api/v1/prompts]
+        WEB_ROUTES[Web Routes]
+        API_ROUTES[REST API]
         ROUTES --> WEB_ROUTES
         ROUTES --> API_ROUTES
     end
 
-    subgraph "Processing Layer (utils/)"
-        DOC[document_parser.py<br/>PDF/PPTX Extraction]
-        WEB_SCRAPE[web_scraper.py<br/>URL Content Fetch]
-        URL_DL[url_downloader.py<br/>Download from URLs]
-        PROMPT[prompt_loader.py<br/>Template Management]
-        ANALYZER[ai_analyzer.py<br/>Analysis Orchestration]
-        OUTPUT[output_generator.py<br/>MD/PDF Generation]
+    subgraph Processing["Processing Layer"]
+        DOC[document_parser.py]
+        WEB_SCRAPE[web_scraper.py]
+        URL_DL[url_downloader.py]
+        PROMPT[prompt_loader.py]
+        ANALYZER[ai_analyzer.py]
+        OUTPUT[output_generator.py]
     end
 
-    subgraph "AI Provider Layer (utils/ai_client.py)"
+    subgraph AIProviders["AI Provider Layer"]
         ANTHROPIC[Anthropic Claude]
         OPENAI[OpenAI GPT]
         GOOGLE[Google Gemini]
@@ -442,7 +444,7 @@ graph TB
         XAI[xAI Grok]
     end
 
-    subgraph "Storage"
+    subgraph Storage["Storage"]
         UPLOADS[(uploads/)]
         OUTPUTS[(outputs/)]
         PROMPTS[(prompts/)]
@@ -572,47 +574,55 @@ The Presentation Intelligence Tool provides a REST API for programmatic access. 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant API as Flask API<br/>/api/v1/analyze
-    participant Scraper as web_scraper.py
-    participant Prompt as prompt_loader.py
-    participant Analyzer as ai_analyzer.py
-    participant AI as AI Provider<br/>(Claude/GPT/Gemini/etc)
+    participant API as Flask API
+    participant Scraper as web_scraper
+    participant Prompt as prompt_loader
+    participant Analyzer as ai_analyzer
+    participant AI as AI Provider
 
-    Client->>API: POST /api/v1/analyze<br/>{title, presenters, notes, resource_urls, prompt_template}
+    Client->>API: POST /api/v1/analyze
+    Note right of Client: JSON: title, presenters,<br/>notes, resource_urls,<br/>prompt_template
 
-    API->>API: Validate required fields<br/>(title, presenters, notes, resource_urls)
+    API->>API: Validate required fields
+    Note right of API: title, presenters,<br/>notes, resource_urls
 
     alt Validation Failed
-        API-->>Client: 400 Bad Request<br/>{success: false, error: "..."}
+        API-->>Client: 400 Bad Request
+        Note left of Client: error message
     end
 
-    API->>Scraper: fetch_multiple_urls(resource_urls)
+    API->>Scraper: fetch_multiple_urls()
 
     loop For each URL
         Scraper->>Scraper: Fetch & extract content
     end
 
-    Scraper-->>API: {success: true, resources: [...], failed_urls: [...]}
+    Scraper-->>API: Return resources
+    Note left of Scraper: success, resources,<br/>failed_urls
 
     alt No Resources Fetched
-        API-->>Client: 400 Bad Request<br/>{success: false, error: "Could not fetch URLs"}
+        API-->>Client: 400 Bad Request
+        Note left of Client: Could not fetch URLs
     end
 
-    API->>Prompt: load_prompt_template(prompt_template)
+    API->>Prompt: load_prompt_template()
     Prompt-->>API: Template JSON
 
-    API->>Analyzer: analyze_presentation(title, presenters, notes, resources, template)
+    API->>Analyzer: analyze_presentation()
+    Note right of API: All content + template
 
     Analyzer->>Analyzer: Build prompt from template
 
     Analyzer->>AI: Send prompt with content
     AI-->>Analyzer: Analysis response
 
-    Analyzer-->>API: {success: true, raw_response: "..."}
+    Analyzer-->>API: Return analysis
+    Note left of Analyzer: success, raw_response
 
     API->>API: Build response with metadata
 
-    API-->>Client: 200 OK<br/>{success: true, analysis: "...", metadata: {...}}
+    API-->>Client: 200 OK
+    Note left of Client: success, analysis,<br/>metadata
 ```
 
 ### API Endpoints
