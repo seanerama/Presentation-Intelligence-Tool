@@ -186,7 +186,7 @@ OLLAMA_MODEL=llama3.1
 
 ```
 summerizer/
-├── app.py                      # Main Flask application
+├── app.py                      # Main Flask application with web & API
 ├── pyproject.toml              # UV dependencies
 ├── requirements.txt            # Pip dependencies (legacy)
 ├── .env.example               # Environment template
@@ -195,6 +195,7 @@ summerizer/
 ├── utils/
 │   ├── ai_client.py           # Unified AI provider interface
 │   ├── ai_analyzer.py         # Analysis logic
+│   ├── prompt_loader.py       # Prompt template management
 │   ├── document_parser.py     # PDF/PPTX extraction
 │   ├── url_downloader.py      # Download presentations from URLs
 │   ├── web_scraper.py         # Fetch web resources
@@ -205,6 +206,15 @@ summerizer/
 ├── static/
 │   └── css/
 │       └── style.css         # Styling
+├── prompts/
+│   ├── presales_engineer.json    # Pre-sales analysis template
+│   ├── network_engineer.json     # Network engineering template
+│   └── security_analyst.json     # Security analysis template
+├── examples/
+│   ├── README.md             # API examples documentation
+│   ├── api_example.py        # Python API usage example
+│   ├── api_example.sh        # Bash API usage example
+│   └── batch_analysis.py     # Batch processing example
 ├── outputs/                  # Generated files
 └── uploads/                  # Temporary upload storage
 ```
@@ -289,6 +299,257 @@ Contributions are welcome! Please:
 For issues and questions:
 - GitHub Issues: [Report a bug](https://github.com/seanerama/Presentation-Intelligence-Tool/issues)
 
+## REST API
+
+The Presentation Intelligence Tool provides a REST API for programmatic access. The API is ideal for integration with other tools, automation, and batch processing.
+
+### API Endpoints
+
+#### GET `/api/v1/prompts`
+
+Get list of available analysis prompt templates.
+
+**Response:**
+```json
+{
+  "success": true,
+  "prompts": [
+    {
+      "id": "presales_engineer",
+      "name": "Pre-Sales Engineer",
+      "description": "Analyze content for pre-sales engineering and client engagement opportunities"
+    },
+    {
+      "id": "network_engineer",
+      "name": "Enterprise Network Engineer",
+      "description": "Analyze content for enterprise network design, implementation, and troubleshooting"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:5000/api/v1/prompts
+```
+
+#### POST `/api/v1/analyze`
+
+Analyze content from web resources (URLs). File uploads are not supported via the API.
+
+**Request Body:**
+```json
+{
+  "title": "Presentation Title",
+  "presenters": "Presenter Names",
+  "notes": "Your analysis notes and observations",
+  "resource_urls": [
+    "https://example.com/lab-guide",
+    "https://example.com/documentation"
+  ],
+  "github_url": "https://github.com/username/repo",
+  "prompt_template": "presales_engineer"
+}
+```
+
+**Required Fields:**
+- `title` (string): Title of the content being analyzed
+- `presenters` (string): Names of presenters/authors
+- `notes` (string): Your personal notes and observations
+- `resource_urls` (array): At least one URL to fetch content from
+
+**Optional Fields:**
+- `github_url` (string): GitHub repository URL
+- `prompt_template` (string): Analysis perspective (default: `presales_engineer`)
+
+**Response (Success):**
+```json
+{
+  "success": true,
+  "analysis": "# EXECUTIVE SUMMARY\n\n...",
+  "metadata": {
+    "title": "Presentation Title",
+    "presenters": "Presenter Names",
+    "date": "January 18, 2025",
+    "time": "02:30 PM",
+    "github_url": "https://github.com/username/repo",
+    "prompt_template": "presales_engineer",
+    "resources_fetched": 2
+  },
+  "warnings": {
+    "failed_urls": ["https://example.com/broken-link"],
+    "message": "Could not fetch 1 URLs"
+  }
+}
+```
+
+**Response (Error):**
+```json
+{
+  "success": false,
+  "error": "Missing required field: title"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Network Automation Workshop",
+    "presenters": "John Doe",
+    "notes": "Great insights on Python automation",
+    "resource_urls": [
+      "https://example.com/lab-guide",
+      "https://github.com/username/network-automation"
+    ],
+    "prompt_template": "network_engineer"
+  }'
+```
+
+### Quick API Examples
+
+For complete, runnable examples, see the [examples/](examples/) directory which includes:
+- **api_example.py** - Python API usage with error handling
+- **api_example.sh** - Bash script using curl and jq
+- **batch_analysis.py** - Batch processing multiple presentations
+- **README.md** - Detailed examples documentation
+
+#### Python Example
+
+```python
+import requests
+import json
+
+# API endpoint
+url = "http://localhost:5000/api/v1/analyze"
+
+# Request data
+data = {
+    "title": "Cloud Security Best Practices",
+    "presenters": "Jane Smith, Bob Johnson",
+    "notes": "Comprehensive overview of cloud security controls",
+    "resource_urls": [
+        "https://example.com/security-guide",
+        "https://docs.example.com/cloud-security"
+    ],
+    "github_url": "https://github.com/example/security-tools",
+    "prompt_template": "security_analyst"
+}
+
+# Send request
+response = requests.post(url, json=data)
+result = response.json()
+
+if result['success']:
+    print("Analysis completed!")
+    print(f"Resources fetched: {result['metadata']['resources_fetched']}")
+    print("\nAnalysis:")
+    print(result['analysis'])
+else:
+    print(f"Error: {result['error']}")
+```
+
+#### cURL Example
+
+```bash
+#!/bin/bash
+
+# Save analysis to file
+curl -X POST http://localhost:5000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d @request.json \
+  | jq -r '.analysis' > analysis.md
+
+echo "Analysis saved to analysis.md"
+```
+
+**request.json:**
+```json
+{
+  "title": "DevOps Pipeline Automation",
+  "presenters": "Alice Chen",
+  "notes": "Deep dive into CI/CD best practices",
+  "resource_urls": [
+    "https://example.com/devops-guide"
+  ],
+  "prompt_template": "presales_engineer"
+}
+```
+
+### API Security Considerations
+
+**IMPORTANT**: The current API implementation is designed for local/trusted use. For production deployments, consider:
+
+1. **Authentication**: Add API key authentication
+   - Use environment variables for API keys
+   - Implement middleware to validate API keys on each request
+   - Consider OAuth 2.0 for enterprise integrations
+
+2. **Rate Limiting**: Prevent abuse
+   - Use Flask-Limiter or similar extensions
+   - Set per-endpoint limits (e.g., 10 requests/minute)
+   - Track usage per API key
+
+3. **HTTPS/TLS**: Encrypt traffic
+   - Use reverse proxy (nginx, Apache) with SSL certificates
+   - Redirect HTTP to HTTPS
+   - Consider Let's Encrypt for free certificates
+
+4. **Input Validation**: Sanitize inputs
+   - Validate URL formats before fetching
+   - Limit number of resource URLs per request
+   - Implement content-length checks
+
+5. **CORS**: Control cross-origin requests
+   - Use Flask-CORS extension
+   - Whitelist allowed origins
+   - Set appropriate headers
+
+**Example: Adding API Key Authentication**
+
+```python
+# In app.py - add this before API endpoints
+from functools import wraps
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key')
+        if not api_key or api_key != os.getenv('API_KEY'):
+            return jsonify({'success': False, 'error': 'Invalid API key'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Then apply to endpoints
+@app.route('/api/v1/analyze', methods=['POST'])
+@require_api_key
+def api_analyze():
+    # ... existing code
+```
+
+**Example: Adding Rate Limiting**
+
+```bash
+# Install Flask-Limiter
+uv add flask-limiter
+
+# In app.py
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["100 per day", "10 per hour"]
+)
+
+@app.route('/api/v1/analyze', methods=['POST'])
+@limiter.limit("5 per minute")
+def api_analyze():
+    # ... existing code
+```
+
 ## Credits
 
 - Built with [Flask](https://flask.palletsprojects.com/)
@@ -297,7 +558,7 @@ For issues and questions:
 
 ---
 
-**Version**: 2.0  
+**Version**: 2.1
 **Last Updated**: 2025
 
 ## Custom Analysis Prompts

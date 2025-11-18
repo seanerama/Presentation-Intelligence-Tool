@@ -4,7 +4,7 @@ Flask web application for analyzing conference presentations.
 """
 
 import os
-from flask import Flask, render_template, request, redirect, url_for, send_file, flash
+from flask import Flask, render_template, request, redirect, url_for, send_file, flash, jsonify
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from datetime import datetime
@@ -290,8 +290,170 @@ if __name__ == '__main__':
     app.run(debug=debug_mode, host='0.0.0.0', port=5000)
 
 
+@app.route('/api/v1/prompts', methods=['GET'])
+def api_get_prompts():
+    """
+    API endpoint to get list of available prompt templates.
+
+    Returns:
+        JSON: List of available prompt templates
+    """
+    try:
+        from utils.prompt_loader import get_available_prompts
+        prompts = get_available_prompts()
+        return jsonify({
+            'success': True,
+            'prompts': prompts
+        }), 200
+    except Exception as e:
+        logger.error(f"Error getting prompts: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/v1/analyze', methods=['POST'])
+def api_analyze():
+    """
+    API endpoint for presentation analysis without file uploads.
+
+    Request JSON:
+        {
+            "title": "Presentation Title",
+            "presenters": "Presenter Names",
+            "notes": "Your analysis notes",
+            "github_url": "https://github.com/..." (optional),
+            "resource_urls": ["https://...", "https://..."] (optional),
+            "prompt_template": "presales_engineer" (optional, default: presales_engineer)
+        }
+
+    Returns:
+        JSON: Analysis results with metadata
+    """
+    try:
+        # Parse JSON request
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'error': 'Content-Type must be application/json'
+            }), 400
+
+        data = request.get_json()
+
+        # Validate required fields
+        title = data.get('title', '').strip()
+        presenters = data.get('presenters', '').strip()
+        user_notes = data.get('notes', '').strip()
+
+        if not title:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required field: title'
+            }), 400
+
+        if not presenters:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required field: presenters'
+            }), 400
+
+        if not user_notes:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required field: notes'
+            }), 400
+
+        # Optional fields
+        github_url = data.get('github_url', '').strip() or None
+        resource_urls = data.get('resource_urls', [])
+        prompt_template = data.get('prompt_template', 'presales_engineer').strip()
+
+        # Validate resource_urls is a list
+        if not isinstance(resource_urls, list):
+            return jsonify({
+                'success': False,
+                'error': 'resource_urls must be an array of URLs'
+            }), 400
+
+        # Must have at least resource URLs since file upload not supported
+        if not resource_urls:
+            return jsonify({
+                'success': False,
+                'error': 'At least one resource URL is required for API analysis (file uploads not supported via API)'
+            }), 400
+
+        # Fetch resources from URLs
+        logger.info(f"API request: Fetching content from {len(resource_urls)} resource URLs...")
+        fetch_result = fetch_multiple_urls(resource_urls)
+
+        if not fetch_result['success'] or not fetch_result['resources']:
+            return jsonify({
+                'success': False,
+                'error': 'Could not fetch any of the provided resource URLs',
+                'failed_urls': fetch_result.get('failed_urls', resource_urls)
+            }), 400
+
+        fetched_resources = fetch_result['resources']
+        logger.info(f"Successfully fetched {len(fetched_resources)} resources for API analysis")
+
+        # No slide content for API (file upload not supported)
+        slide_content = ""
+
+        # Analyze with AI
+        logger.info("API request: Analyzing with AI...")
+        analysis = analyze_presentation(
+            title=title,
+            presenters=presenters,
+            user_notes=user_notes,
+            slide_content=slide_content,
+            github_url=github_url,
+            additional_resources=fetched_resources,
+            prompt_template=prompt_template
+        )
+
+        if not analysis.get('success'):
+            error_msg = analysis.get('error', 'Unknown error')
+            return jsonify({
+                'success': False,
+                'error': f'Analysis failed: {error_msg}'
+            }), 500
+
+        # Return analysis results with metadata
+        response_data = {
+            'success': True,
+            'analysis': analysis['raw_response'],
+            'metadata': {
+                'title': title,
+                'presenters': presenters,
+                'date': datetime.now().strftime('%B %d, %Y'),
+                'time': datetime.now().strftime('%I:%M %p'),
+                'github_url': github_url or '',
+                'prompt_template': prompt_template,
+                'resources_fetched': len(fetched_resources)
+            }
+        }
+
+        # Include warnings about failed URLs if any
+        if fetch_result.get('failed_urls'):
+            response_data['warnings'] = {
+                'failed_urls': fetch_result['failed_urls'],
+                'message': f"Could not fetch {len(fetch_result['failed_urls'])} URLs"
+            }
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        logger.error(f"API error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# Legacy endpoint for backwards compatibility
 @app.route('/api/prompts')
 def get_prompts():
-    """Get list of available prompt templates."""
+    """Legacy endpoint - redirects to /api/v1/prompts."""
     from utils.prompt_loader import get_available_prompts
     return {'prompts': get_available_prompts()}
