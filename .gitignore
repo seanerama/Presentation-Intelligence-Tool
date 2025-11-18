@@ -1,6 +1,7 @@
 # Environment variables
 .env
 
+isnstruct.md
 # Python
 __pycache__/
 *.py[cod]

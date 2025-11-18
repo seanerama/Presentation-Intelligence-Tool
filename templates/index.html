@@ -37,6 +37,16 @@
             </div>
 
             <div class="form-group">
+            <div class="form-group">
+                <label for="prompt_template">Analysis Perspective <span class="required">*</span></label>
+                <select id="prompt_template" name="prompt_template" required>
+                    <option value="presales_engineer" selected>Pre-Sales Engineer</option>
+                    <option value="network_engineer">Enterprise Network Engineer</option>
+                    <option value="security_analyst">Security Analyst</option>
+                </select>
+                <small class="help-text">Choose the analysis perspective that best fits your role and needs</small>
+            </div>
+
                 <label for="github_url">GitHub Repository URL <span class="optional">(Optional)</span></label>
                 <input type="url" id="github_url" name="github_url" maxlength="500"
                        placeholder="https://github.com/username/repo"
@@ -59,7 +69,7 @@
             </div>
 
             <div class="form-group">
-                <label>Slide Deck <span class="required">*</span></label>
+                <label>Slide Deck <span class="optional">(Optional)</span></label>
                 <div class="deck-input-options">
                     <div class="input-option">
                         <input type="radio" id="upload-option" name="deck_source" value="upload" checked>
@@ -73,21 +83,27 @@
                         <input type="url" id="deck_url" name="deck_url" placeholder="https://example.com/presentation.pdf">
                         <small class="help-text">Direct link to PDF or PPTX file</small>
                     </div>
+                    <div class="input-option">
+                        <input type="radio" id="none-option" name="deck_source" value="none">
+                        <label for="none-option">No Slide Deck</label>
+                        <small class="help-text">Analyze only the additional resource URLs provided above</small>
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" class="btn-primary">Analyze Presentation</button>
+            <button type="submit" class="btn-primary">Analyze Content</button>
 
             <script>
                 // Handle deck source switching
                 const uploadOption = document.getElementById('upload-option');
                 const urlOption = document.getElementById('url-option');
+                const noneOption = document.getElementById('none-option');
                 const fileInput = document.getElementById('deck');
                 const urlInput = document.getElementById('deck_url');
 
                 uploadOption.addEventListener('change', function() {
                     if (this.checked) {
-                        fileInput.required = true;
+                        fileInput.required = false;
                         urlInput.required = false;
                         urlInput.value = '';
                     }
@@ -95,16 +111,25 @@
 
                 urlOption.addEventListener('change', function() {
                     if (this.checked) {
-                        urlInput.required = true;
+                        urlInput.required = false;
                         fileInput.required = false;
                         fileInput.value = '';
+                    }
+                });
+
+                noneOption.addEventListener('change', function() {
+                    if (this.checked) {
+                        fileInput.required = false;
+                        urlInput.required = false;
+                        fileInput.value = '';
+                        urlInput.value = '';
                     }
                 });
             </script>
         </form>
 
         <footer>
-            <p>Powered by Claude AI (Anthropic)</p>
+            <p>Powered by AI</p>
         </footer>
     </div>
 </body>

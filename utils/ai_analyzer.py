@@ -1,10 +1,11 @@
 """
-Claude Analyzer Module
-Interacts with Claude API to analyze presentation content.
+AI Analyzer Module
+Interacts with various AI providers to analyze presentation content.
 """
 
 import os
-from anthropic import Anthropic
+from utils.ai_client import AIClient
+from utils.prompt_loader import load_prompt_template, build_prompt_from_template
 from typing import Dict, Optional
 import logging
 
@@ -42,18 +43,22 @@ def build_analysis_prompt(title: str, presenters: str, user_notes: str,
             resources_section += f"URL: {resource['url']}\n"
             resources_section += f"Content:\n{resource['content']}\n"
 
-    prompt = f"""You are a pre-sales engineering advisor analyzing a technical presentation.
+    # Determine if we have slide content
+    has_slides = slide_content and slide_content.strip()
+    content_type = "presentation" if has_slides else "technical content"
 
-PRESENTATION CONTEXT:
+    prompt = f"""You are a pre-sales engineering advisor analyzing {content_type}.
+
+CONTEXT:
 - Title: {title}
-- Presenters: {presenters}
+- {"Presenters" if has_slides else "Authors/Sources"}: {presenters}
 - Attendee's Personal Notes: {user_notes}
 {github_section}
-SLIDE CONTENT EXTRACTED:
-{slide_content}{resources_section}
+{"SLIDE CONTENT EXTRACTED:" if has_slides else ""}
+{slide_content if has_slides else ""}{resources_section}
 
 YOUR TASK:
-Analyze this presentation{"and the provided additional resources" if additional_resources else ""} and provide insights that help a pre-sales engineer leverage this knowledge to better serve their clients and build trust.{"Consider how the additional resources (lab guides, documentation, articles, etc.) complement and expand upon the presentation content." if additional_resources else ""}
+Analyze this {content_type}{"and the provided resources" if additional_resources else ""} and provide insights that help a pre-sales engineer leverage this knowledge to better serve their clients and build trust.{" Focus on the information provided in the resource URLs since no slide deck was provided." if not has_slides and additional_resources else " Consider how the additional resources (lab guides, documentation, articles, etc.) complement and expand upon the presentation content." if additional_resources else ""}
 
 Please structure your response in the following sections:
 
@@ -143,41 +148,37 @@ def analyze_presentation(title: str, presenters: str, user_notes: str,
         }
     """
     try:
-        # Initialize Anthropic client
-        api_key = os.getenv('ANTHROPIC_API_KEY')
-        if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
-
-        client = Anthropic(api_key=api_key)
+        # Initialize AI client (uses provider from environment)
+        ai_provider = os.getenv('AI_PROVIDER')
+        logger.info(f"Using AI provider: {ai_provider}")
+        client = AIClient(provider=ai_provider)
 
         # Build the prompt
         prompt = build_analysis_prompt(title, presenters, user_notes, slide_content, github_url, additional_resources)
 
-        # Call Claude API
-        logger.info("Sending request to Claude API...")
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4096,
-            temperature=0.7,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
+        # Call AI API
+        logger.info(f"Sending request to {ai_provider} API...")
+        response = client.generate(prompt, max_tokens=4096, temperature=0.7)
+
+        if not response['success']:
+            raise Exception(response['error'])
 
         # Extract response
-        raw_response = message.content[0].text
-        logger.info("Successfully received response from Claude API")
+        raw_response = response['text']
+        logger.info(f"Successfully received response from {ai_provider} ({response['model']})")
 
         # Parse the response (simple parsing - could be enhanced)
         result = {
             'raw_response': raw_response,
-            'success': True
+            'success': True,
+            'provider': response['provider'],
+            'model': response['model']
         }
 
         return result
 
     except Exception as e:
-        logger.error(f"Error analyzing presentation with Claude: {str(e)}")
+        logger.error(f"Error analyzing presentation with AI: {str(e)}")
         return {
             'raw_response': '',
             'success': False,

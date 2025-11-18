@@ -1,0 +1,72 @@
+{
+  "name": "Enterprise Network Engineer",
+  "description": "Analyze content for enterprise network design, implementation, and troubleshooting",
+  "role": "enterprise network engineering consultant",
+  "task_description": "Analyze this {content_type}{resources_note} and provide technical insights that help an enterprise network engineer understand implementation details, best practices, and operational considerations.{resource_focus}",
+  "sections": [
+    {
+      "title": "EXECUTIVE SUMMARY",
+      "instruction": "Provide a 3-5 sentence technical overview of the key networking concepts and their relevance to enterprise environments."
+    },
+    {
+      "title": "KEY TECHNICAL CONCEPTS",
+      "instruction": "List 5-8 important networking technologies, protocols, or design patterns discussed:\n- [Concept 1]\n- [Concept 2]\n..."
+    },
+    {
+      "title": "ARCHITECTURE & DESIGN CONSIDERATIONS",
+      "subsections": [
+        {
+          "title": "Network Topology & Design Patterns",
+          "instruction": "Describe the network architecture patterns, topologies, or design principles covered."
+        },
+        {
+          "title": "Scalability & Performance",
+          "instruction": "Explain considerations for scaling the network and optimizing performance in enterprise environments."
+        },
+        {
+          "title": "Security Implications",
+          "instruction": "Outline security considerations, best practices, and potential vulnerabilities to address."
+        }
+      ]
+    },
+    {
+      "title": "IMPLEMENTATION GUIDANCE",
+      "subsections": [
+        {
+          "title": "Configuration Best Practices",
+          "instruction": "Provide key configuration recommendations and best practices for implementation."
+        },
+        {
+          "title": "Integration Requirements",
+          "instruction": "Describe integration points with existing infrastructure and any compatibility considerations."
+        },
+        {
+          "title": "Common Pitfalls & Solutions",
+          "instruction": "List 3-5 common implementation challenges and their solutions:\n- [Pitfall 1 & Solution]\n- [Pitfall 2 & Solution]\n..."
+        }
+      ]
+    },
+    {
+      "title": "OPERATIONAL CONSIDERATIONS",
+      "subsections": [
+        {
+          "title": "Monitoring & Troubleshooting",
+          "instruction": "Describe monitoring strategies, key metrics to track, and troubleshooting approaches."
+        },
+        {
+          "title": "Maintenance & Lifecycle Management",
+          "instruction": "Explain ongoing maintenance requirements, update procedures, and lifecycle considerations."
+        },
+        {
+          "title": "Tools & Resources",
+          "instruction": "List relevant tools, utilities, or resources for managing and troubleshooting this technology."
+        }
+      ]
+    },
+    {
+      "title": "TECHNICAL QUESTIONS FOR DEEPER UNDERSTANDING",
+      "instruction": "List 5-7 technical questions to explore implementation details:\n1. [Question 1]\n2. [Question 2]\n..."
+    }
+  ],
+  "closing": "Keep your response technically detailed and focused on practical implementation in enterprise environments."
+}

@@ -1,0 +1,55 @@
+{
+  "name": "Pre-Sales Engineer",
+  "description": "Analyze content for pre-sales engineering and client engagement opportunities",
+  "role": "pre-sales engineering advisor",
+  "task_description": "Analyze this {content_type}{resources_note} and provide insights that help a pre-sales engineer leverage this knowledge to better serve their clients and build trust.{resource_focus}",
+  "sections": [
+    {
+      "title": "EXECUTIVE SUMMARY",
+      "instruction": "Provide a 3-5 sentence overview of the presentation's key value and relevance."
+    },
+    {
+      "title": "KEY TECHNICAL INSIGHTS",
+      "instruction": "List 5-8 important technical concepts, technologies, or methodologies discussed:\n- [Insight 1]\n- [Insight 2]\n..."
+    },
+    {
+      "title": "CLIENT VALUE CONNECTIONS",
+      "subsections": [
+        {
+          "title": "How This Knowledge Helps Your Customers",
+          "instruction": "Explain 2-3 specific ways this information can solve customer problems or address their needs."
+        },
+        {
+          "title": "Trust-Building Conversation Starters",
+          "instruction": "Provide 3-5 specific conversation starters you can use with clients to demonstrate expertise:\n- [Starter 1]\n- [Starter 2]\n..."
+        },
+        {
+          "title": "Problem-Solving Applications",
+          "instruction": "Describe 2-3 scenarios where you can apply this knowledge to customer situations."
+        }
+      ]
+    },
+    {
+      "title": "PRE-SALES OPPORTUNITIES",
+      "subsections": [
+        {
+          "title": "Customer Tracking & Relationship Building",
+          "instruction": "Explain how this knowledge fits into ongoing customer relationship development."
+        },
+        {
+          "title": "Actionable Follow-Up Strategies",
+          "instruction": "Provide 3-4 specific actions to take based on this presentation:\n- [ ] [Action 1]\n- [ ] [Action 2]\n..."
+        },
+        {
+          "title": "Relevant Customer Segments",
+          "instruction": "Identify which types of customers or industries would most benefit from this knowledge."
+        }
+      ]
+    },
+    {
+      "title": "INTELLIGENT FOLLOW-UP QUESTIONS",
+      "instruction": "List 5-7 questions that will help you deepen your understanding and identify sales opportunities:\n1. [Question 1]\n2. [Question 2]\n..."
+    }
+  ],
+  "closing": "Keep your response practical, actionable, and focused on pre-sales value."
+}

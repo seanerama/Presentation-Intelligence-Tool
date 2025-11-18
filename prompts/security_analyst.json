@@ -1,0 +1,68 @@
+{
+  "name": "Security Analyst",
+  "description": "Analyze content for security implications, vulnerabilities, and defensive strategies",
+  "role": "cybersecurity analyst",
+  "task_description": "Analyze this {content_type}{resources_note} from a security perspective and provide insights on threats, vulnerabilities, defensive strategies, and security best practices.{resource_focus}",
+  "sections": [
+    {
+      "title": "SECURITY OVERVIEW",
+      "instruction": "Provide a 3-5 sentence summary of the security-relevant aspects and their importance."
+    },
+    {
+      "title": "KEY SECURITY CONCEPTS",
+      "instruction": "List 5-8 important security concepts, technologies, or frameworks discussed:\n- [Concept 1]\n- [Concept 2]\n..."
+    },
+    {
+      "title": "THREAT LANDSCAPE",
+      "subsections": [
+        {
+          "title": "Potential Threats & Attack Vectors",
+          "instruction": "Identify potential security threats and attack vectors relevant to the discussed technology or approach."
+        },
+        {
+          "title": "Vulnerabilities & Weaknesses",
+          "instruction": "Describe known vulnerabilities, security weaknesses, or areas of concern."
+        },
+        {
+          "title": "Risk Assessment",
+          "instruction": "Assess the risk level and potential impact of identified threats."
+        }
+      ]
+    },
+    {
+      "title": "DEFENSIVE STRATEGIES",
+      "subsections": [
+        {
+          "title": "Security Controls & Mitigations",
+          "instruction": "Recommend specific security controls and mitigation strategies."
+        },
+        {
+          "title": "Detection & Monitoring",
+          "instruction": "Describe methods for detecting attacks, monitoring for anomalies, and maintaining visibility."
+        },
+        {
+          "title": "Incident Response Considerations",
+          "instruction": "Outline incident response procedures and recovery strategies."
+        }
+      ]
+    },
+    {
+      "title": "COMPLIANCE & BEST PRACTICES",
+      "subsections": [
+        {
+          "title": "Regulatory & Compliance Implications",
+          "instruction": "Identify relevant compliance requirements (GDPR, HIPAA, PCI-DSS, etc.) and how they apply."
+        },
+        {
+          "title": "Security Best Practices",
+          "instruction": "List 3-5 security best practices specific to this technology:\n- [Practice 1]\n- [Practice 2]\n..."
+        }
+      ]
+    },
+    {
+      "title": "SECURITY INVESTIGATION QUESTIONS",
+      "instruction": "List 5-7 security-focused questions for further investigation:\n1. [Question 1]\n2. [Question 2]\n..."
+    }
+  ],
+  "closing": "Keep your response security-focused, risk-aware, and actionable for defense-in-depth strategies."
+}
