@@ -1,10 +1,10 @@
 # Presentation Intelligence Tool
 
-Transform technical presentations into strategic pre-sales intelligence using AI-powered analysis.
+Transform technical presentations into actionable insights tailored to your role using AI-powered analysis.
 
 ## Overview
 
-The Presentation Intelligence Tool is a Flask-based web application that analyzes conference and vendor presentations using AI. It extracts actionable insights for pre-sales engineers, helping them identify opportunities to add value for clients and build trust through relevant knowledge sharing.
+The Presentation Intelligence Tool is a Flask-based web application that analyzes conference and vendor presentations using AI. It extracts actionable insights tailored to your specific role—whether you're a pre-sales engineer identifying client opportunities, a network engineer evaluating architecture patterns, or a security analyst assessing threats and controls.
 
 ## Features
 
