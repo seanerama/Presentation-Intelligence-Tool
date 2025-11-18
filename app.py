@@ -280,16 +280,6 @@ def health():
     return {'status': 'healthy', 'timestamp': datetime.now().isoformat()}
 
 
-if __name__ == '__main__':
-    # Create required directories
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
-
-    # Run the app
-    debug_mode = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
-    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
-
-
 @app.route('/api/v1/prompts', methods=['GET'])
 def api_get_prompts():
     """
@@ -457,3 +447,13 @@ def get_prompts():
     """Legacy endpoint - redirects to /api/v1/prompts."""
     from utils.prompt_loader import get_available_prompts
     return {'prompts': get_available_prompts()}
+
+
+if __name__ == '__main__':
+    # Create required directories
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+
+    # Run the app
+    debug_mode = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)

@@ -124,9 +124,10 @@ Keep your response practical, actionable, and focused on pre-sales value."""
 
 def analyze_presentation(title: str, presenters: str, user_notes: str,
                         slide_content: str, github_url: Optional[str] = None,
-                        additional_resources: Optional[list] = None) -> Dict[str, any]:
+                        additional_resources: Optional[list] = None,
+                        prompt_template: str = 'presales_engineer') -> Dict[str, any]:
     """
-    Send content to Claude API and parse response.
+    Send content to AI API and parse response.
 
     Args:
         title: Presentation title
@@ -135,6 +136,7 @@ def analyze_presentation(title: str, presenters: str, user_notes: str,
         slide_content: Extracted text from slides
         github_url: Optional GitHub repository URL
         additional_resources: Optional list of fetched web resources
+        prompt_template: Analysis perspective template ID (default: presales_engineer)
 
     Returns:
         {
@@ -153,8 +155,16 @@ def analyze_presentation(title: str, presenters: str, user_notes: str,
         logger.info(f"Using AI provider: {ai_provider}")
         client = AIClient(provider=ai_provider)
 
-        # Build the prompt
-        prompt = build_analysis_prompt(title, presenters, user_notes, slide_content, github_url, additional_resources)
+        # Load and build prompt from template
+        template = load_prompt_template(prompt_template)
+        if not template:
+            logger.warning(f"Prompt template '{prompt_template}' not found, falling back to legacy prompt")
+            prompt = build_analysis_prompt(title, presenters, user_notes, slide_content, github_url, additional_resources)
+        else:
+            logger.info(f"Using prompt template: {template.get('name', prompt_template)}")
+            prompt = build_prompt_from_template(
+                template, title, presenters, user_notes, slide_content, github_url, additional_resources
+            )
 
         # Call AI API
         logger.info(f"Sending request to {ai_provider} API...")
