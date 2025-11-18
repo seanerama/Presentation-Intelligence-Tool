@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 def build_analysis_prompt(title: str, presenters: str, user_notes: str,
-                          slide_content: str, github_url: Optional[str] = None) -> str:
+                          slide_content: str, github_url: Optional[str] = None,
+                          additional_resources: Optional[list] = None) -> str:
     """
     Construct the prompt for Claude with all context.
 
@@ -23,6 +24,7 @@ def build_analysis_prompt(title: str, presenters: str, user_notes: str,
         user_notes: User's personal notes
         slide_content: Extracted text from slides
         github_url: Optional GitHub repository URL
+        additional_resources: Optional list of fetched web resources
 
     Returns:
         Formatted prompt string
@@ -30,6 +32,15 @@ def build_analysis_prompt(title: str, presenters: str, user_notes: str,
     github_section = ""
     if github_url:
         github_section = f"- GitHub Repository: {github_url} (contains lab guides, code samples, and related materials)\n"
+
+    # Build additional resources section
+    resources_section = ""
+    if additional_resources:
+        resources_section = "\n\nADDITIONAL RESOURCES PROVIDED:\n"
+        for i, resource in enumerate(additional_resources, 1):
+            resources_section += f"\n--- Resource {i}: {resource['title']} ---\n"
+            resources_section += f"URL: {resource['url']}\n"
+            resources_section += f"Content:\n{resource['content']}\n"
 
     prompt = f"""You are a pre-sales engineering advisor analyzing a technical presentation.
 
@@ -39,10 +50,10 @@ PRESENTATION CONTEXT:
 - Attendee's Personal Notes: {user_notes}
 {github_section}
 SLIDE CONTENT EXTRACTED:
-{slide_content}
+{slide_content}{resources_section}
 
 YOUR TASK:
-Analyze this presentation and provide insights that help a pre-sales engineer leverage this knowledge to better serve their clients and build trust.
+Analyze this presentation{"and the provided additional resources" if additional_resources else ""} and provide insights that help a pre-sales engineer leverage this knowledge to better serve their clients and build trust.{"Consider how the additional resources (lab guides, documentation, articles, etc.) complement and expand upon the presentation content." if additional_resources else ""}
 
 Please structure your response in the following sections:
 
@@ -107,7 +118,8 @@ Keep your response practical, actionable, and focused on pre-sales value."""
 
 
 def analyze_presentation(title: str, presenters: str, user_notes: str,
-                        slide_content: str, github_url: Optional[str] = None) -> Dict[str, any]:
+                        slide_content: str, github_url: Optional[str] = None,
+                        additional_resources: Optional[list] = None) -> Dict[str, any]:
     """
     Send content to Claude API and parse response.
 
@@ -117,6 +129,7 @@ def analyze_presentation(title: str, presenters: str, user_notes: str,
         user_notes: User's personal notes
         slide_content: Extracted text from slides
         github_url: Optional GitHub repository URL
+        additional_resources: Optional list of fetched web resources
 
     Returns:
         {
@@ -138,7 +151,7 @@ def analyze_presentation(title: str, presenters: str, user_notes: str,
         client = Anthropic(api_key=api_key)
 
         # Build the prompt
-        prompt = build_analysis_prompt(title, presenters, user_notes, slide_content, github_url)
+        prompt = build_analysis_prompt(title, presenters, user_notes, slide_content, github_url, additional_resources)
 
         # Call Claude API
         logger.info("Sending request to Claude API...")

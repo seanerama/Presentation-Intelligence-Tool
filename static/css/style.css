@@ -64,6 +64,12 @@ header h1 {
     color: #1e8449;
 }
 
+.message.warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #f39c12;
+    color: #856404;
+}
+
 /* Form Styles */
 .upload-form {
     margin-bottom: 30px;
@@ -119,6 +125,49 @@ textarea {
     margin-top: 5px;
     color: #7f8c8d;
     font-size: 0.9em;
+}
+
+/* Deck Input Options */
+.deck-input-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.input-option {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    border: 2px solid #ecf0f1;
+    border-radius: 6px;
+    background-color: white;
+    transition: border-color 0.3s;
+}
+
+.input-option:has(input[type="radio"]:checked) {
+    border-color: #667eea;
+    background-color: #f0f4ff;
+}
+
+.input-option input[type="radio"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.input-option > label[for*="option"] {
+    display: inline;
+    font-weight: 600;
+    color: #2c3e50;
+    cursor: pointer;
+}
+
+.input-option input[type="file"],
+.input-option input[type="url"] {
+    margin-top: 5px;
 }
 
 /* Buttons */

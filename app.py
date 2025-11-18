@@ -13,6 +13,8 @@ import logging
 from utils.document_parser import extract_content
 from utils.claude_analyzer import analyze_presentation
 from utils.output_generator import create_outputs
+from utils.url_downloader import download_file_from_url
+from utils.web_scraper import fetch_multiple_urls
 
 # Load environment variables
 load_dotenv()
@@ -60,36 +62,79 @@ def analyze():
         presenters = request.form.get('presenters', '').strip()
         user_notes = request.form.get('notes', '').strip()
         github_url = request.form.get('github_url', '').strip()
+        resource_urls_text = request.form.get('resource_urls', '').strip()
 
         if not title or not presenters or not user_notes:
             flash('Please fill in all required fields.', 'error')
             return redirect(url_for('index'))
 
-        # Check if file was uploaded
-        if 'deck' not in request.files:
-            flash('No file uploaded.', 'error')
-            return redirect(url_for('index'))
+        # Parse resource URLs (one per line)
+        resource_urls = []
+        if resource_urls_text:
+            resource_urls = [url.strip() for url in resource_urls_text.split('\n') if url.strip()]
+            logger.info(f"Found {len(resource_urls)} resource URLs to fetch")
 
-        file = request.files['deck']
-
-        if file.filename == '':
-            flash('No file selected.', 'error')
-            return redirect(url_for('index'))
-
-        if not allowed_file(file.filename):
-            flash('Invalid file type. Only PDF and PPTX files are supported.', 'error')
-            return redirect(url_for('index'))
-
-        # Save uploaded file
-        filename = secure_filename(file.filename)
-        file_ext = filename.rsplit('.', 1)[1].lower()
+        # Check deck source (upload or URL)
+        deck_source = request.form.get('deck_source', 'upload')
+        file_path = None
+        file_ext = None
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        temp_filename = f"{timestamp}_{filename}"
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
 
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        file.save(file_path)
-        logger.info(f"File saved: {file_path}")
+        if deck_source == 'url':
+            # Handle URL import
+            deck_url = request.form.get('deck_url', '').strip()
+
+            if not deck_url:
+                flash('Please provide a URL to the presentation file.', 'error')
+                return redirect(url_for('index'))
+
+            logger.info(f"Downloading presentation from URL: {deck_url}")
+
+            # Download file from URL
+            download_result = download_file_from_url(deck_url, app.config['UPLOAD_FOLDER'])
+
+            if not download_result['success']:
+                flash(f"Failed to download file from URL: {download_result['error']}", 'error')
+                return redirect(url_for('index'))
+
+            file_path = download_result['file_path']
+            filename = download_result['filename']
+            file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+
+            if not file_ext or file_ext not in ALLOWED_EXTENSIONS:
+                # Clean up downloaded file
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                flash('Invalid file type. Only PDF and PPTX files are supported.', 'error')
+                return redirect(url_for('index'))
+
+            logger.info(f"File downloaded: {file_path}")
+
+        else:
+            # Handle file upload
+            if 'deck' not in request.files:
+                flash('No file uploaded.', 'error')
+                return redirect(url_for('index'))
+
+            file = request.files['deck']
+
+            if file.filename == '':
+                flash('No file selected.', 'error')
+                return redirect(url_for('index'))
+
+            if not allowed_file(file.filename):
+                flash('Invalid file type. Only PDF and PPTX files are supported.', 'error')
+                return redirect(url_for('index'))
+
+            # Save uploaded file
+            filename = secure_filename(file.filename)
+            file_ext = filename.rsplit('.', 1)[1].lower()
+            temp_filename = f"{timestamp}_{filename}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            file.save(file_path)
+            logger.info(f"File saved: {file_path}")
 
         # Extract content from file
         logger.info("Extracting content from presentation...")
@@ -115,6 +160,19 @@ def analyze():
         slide_content = extracted['text']
         logger.info(f"Extracted {len(slide_content)} characters of text")
 
+        # Fetch additional resources if URLs provided
+        fetched_resources = None
+        if resource_urls:
+            logger.info(f"Fetching content from {len(resource_urls)} additional resource URLs...")
+            fetch_result = fetch_multiple_urls(resource_urls)
+            if fetch_result['success']:
+                fetched_resources = fetch_result['resources']
+                logger.info(f"Successfully fetched {len(fetched_resources)} resources")
+                if fetch_result['failed_urls']:
+                    flash(f"Warning: Could not fetch {len(fetch_result['failed_urls'])} URLs", 'warning')
+            else:
+                flash("Warning: Could not fetch any of the provided resource URLs", 'warning')
+
         # Analyze with Claude
         logger.info("Analyzing presentation with Claude...")
         analysis = analyze_presentation(
@@ -122,7 +180,8 @@ def analyze():
             presenters=presenters,
             user_notes=user_notes,
             slide_content=slide_content,
-            github_url=github_url if github_url else None
+            github_url=github_url if github_url else None,
+            additional_resources=fetched_resources
         )
 
         if not analysis.get('success'):

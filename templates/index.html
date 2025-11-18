@@ -45,6 +45,13 @@
             </div>
 
             <div class="form-group">
+                <label for="resource_urls">Additional Resource URLs <span class="optional">(Optional)</span></label>
+                <textarea id="resource_urls" name="resource_urls" maxlength="2000" rows="4"
+                          placeholder="https://example.com/lab-guide&#10;https://docs.example.com/tutorial&#10;https://blog.example.com/article&#10;&#10;Enter one URL per line"></textarea>
+                <small class="help-text">Provide URLs to lab guides, documentation, or related content. The AI will fetch and analyze these resources along with your presentation. One URL per line.</small>
+            </div>
+
+            <div class="form-group">
                 <label for="notes">Your Notes <span class="required">*</span></label>
                 <textarea id="notes" name="notes" required maxlength="2000" rows="6"
                           placeholder="What did you find interesting? Key takeaways? Pain points discussed?"></textarea>
@@ -52,12 +59,48 @@
             </div>
 
             <div class="form-group">
-                <label for="deck">Upload Slide Deck <span class="required">*</span></label>
-                <input type="file" id="deck" name="deck" accept=".pdf,.pptx" required>
-                <small class="help-text">PDF or PPTX format, maximum 50MB</small>
+                <label>Slide Deck <span class="required">*</span></label>
+                <div class="deck-input-options">
+                    <div class="input-option">
+                        <input type="radio" id="upload-option" name="deck_source" value="upload" checked>
+                        <label for="upload-option">Upload File</label>
+                        <input type="file" id="deck" name="deck" accept=".pdf,.pptx">
+                        <small class="help-text">PDF or PPTX format, maximum 50MB</small>
+                    </div>
+                    <div class="input-option">
+                        <input type="radio" id="url-option" name="deck_source" value="url">
+                        <label for="url-option">Import from URL</label>
+                        <input type="url" id="deck_url" name="deck_url" placeholder="https://example.com/presentation.pdf">
+                        <small class="help-text">Direct link to PDF or PPTX file</small>
+                    </div>
+                </div>
             </div>
 
             <button type="submit" class="btn-primary">Analyze Presentation</button>
+
+            <script>
+                // Handle deck source switching
+                const uploadOption = document.getElementById('upload-option');
+                const urlOption = document.getElementById('url-option');
+                const fileInput = document.getElementById('deck');
+                const urlInput = document.getElementById('deck_url');
+
+                uploadOption.addEventListener('change', function() {
+                    if (this.checked) {
+                        fileInput.required = true;
+                        urlInput.required = false;
+                        urlInput.value = '';
+                    }
+                });
+
+                urlOption.addEventListener('change', function() {
+                    if (this.checked) {
+                        urlInput.required = true;
+                        fileInput.required = false;
+                        fileInput.value = '';
+                    }
+                });
+            </script>
         </form>
 
         <footer>
