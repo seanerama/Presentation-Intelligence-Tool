@@ -46,7 +46,7 @@ The Presentation Intelligence Tool is a Flask-based web application that analyze
 
 - Python 3.12 or higher
 - UV package manager (recommended) or pip
-- API key for your chosen AI provider (see AI Provider Setup below)
+- API key for your chosen AI provider (Anthropic, OpenAI, Google, Ollama, or xAI)
 
 ### Installation
 
@@ -56,55 +56,47 @@ git clone https://github.com/seanerama/Presentation-Intelligence-Tool.git
 cd Presentation-Intelligence-Tool
 ```
 
-2. **Install dependencies with your chosen AI provider**:
+2. **Install dependencies**:
 ```bash
-# Using UV (recommended)
-# Install with Anthropic Claude
-uv sync --extra anthropic
+# Using UV (recommended) - install with your chosen AI provider
+uv sync --extra openai        # OpenAI GPT
+uv sync --extra anthropic     # Anthropic Claude
+uv sync --extra google        # Google Gemini
+uv sync --extra ollama        # Ollama (local models)
+uv sync --extra xai           # xAI Grok
+uv sync --extra all-providers # All providers
 
-# Or with OpenAI
-uv sync --extra openai
-
-# Or install all providers
-uv sync --extra all-providers
-
-# Using pip (alternative)
+# Or using pip
 pip install -r requirements.txt
-pip install anthropic  # or openai, google-generativeai, ollama
+pip install openai  # or anthropic, google-generativeai, ollama
 ```
 
 3. **Configure environment**:
 ```bash
 cp .env.example .env
+# Edit .env with your preferred editor
 ```
 
-Edit `.env` and configure (see AI Provider Setup section):
+Set the following in `.env`:
 ```env
 # REQUIRED: Choose your AI provider
 AI_PROVIDER=openai  # or anthropic, google, ollama, xai
 
-# REQUIRED: Add your API key
+# REQUIRED: Add your API key (get from AI Provider Setup section below)
 OPENAI_API_KEY=your-key-here
 
-# REQUIRED: Flask secret key
-FLASK_SECRET_KEY=your-secret-key-here
-```
-
-Generate a Flask secret key:
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
+# REQUIRED: Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+FLASK_SECRET_KEY=your-generated-secret-key
 ```
 
 4. **Run the application**:
 ```bash
-# With UV
-uv run python app.py
-
-# With pip/venv
-python app.py
+uv run python app.py  # or just: python app.py
 ```
 
-5. **Access the app**: Open your browser to `http://localhost:5000`
+5. **Access the app**: Open `http://localhost:5000` in your browser
+
+For detailed provider setup and API key links, see the **AI Provider Setup** section below.
 
 ## AI Provider Setup
 
@@ -161,12 +153,43 @@ OLLAMA_MODEL=llama3.1
 
 ## Usage
 
+### Web Interface Flow
+
+```mermaid
+graph TD
+    A[Start: Open http://localhost:5000] --> B[Fill in Form]
+    B --> C{Slide Deck Source?}
+    C -->|Upload File| D[Upload PDF/PPTX]
+    C -->|URL Import| E[Provide Deck URL]
+    C -->|None| F[Skip Deck]
+    D --> G[Extract Text from Deck]
+    E --> G
+    F --> H[Process Additional Resources]
+    G --> H
+    H --> I{Additional URLs Provided?}
+    I -->|Yes| J[Fetch Content from URLs]
+    I -->|No| K[Skip Resource Fetch]
+    J --> L[Combine All Content]
+    K --> L
+    L --> M[Send to AI Provider]
+    M --> N[Generate Analysis]
+    N --> O[Create MD & PDF Outputs]
+    O --> P[Display Results]
+    P --> Q{Download?}
+    Q -->|Markdown| R[Download .md File]
+    Q -->|PDF| S[Download .pdf File]
+    Q -->|Done| T[End]
+```
+
+### Step-by-Step Instructions
+
 1. **Open** `http://localhost:5000` in your browser
 
 2. **Fill in the form**:
    - **Presentation Title** (required)
    - **Presenter Names** (required)
    - **Your Notes** (required) - your observations and key takeaways
+   - **Analysis Template** (optional) - choose your perspective (default: Pre-Sales Engineer)
    - **GitHub Repository URL** (optional)
    - **Additional Resource URLs** (optional) - lab guides, docs, articles (one per line)
    - **Slide Deck** (optional):
@@ -182,7 +205,173 @@ OLLAMA_MODEL=llama3.1
 
 4. **Download** results as Markdown or PDF
 
+## Custom Analysis Prompts
+
+The tool supports customizable analysis prompts for different roles and perspectives. You can use built-in templates or create your own.
+
+### Prompt Template System
+
+```mermaid
+graph LR
+    subgraph "Prompt Templates (prompts/)"
+        P1[presales_engineer.json]
+        P2[network_engineer.json]
+        P3[security_analyst.json]
+        P4[custom_template.json]
+    end
+
+    subgraph "Prompt Loader"
+        LOAD[prompt_loader.py]
+        LOAD --> PARSE[Parse JSON Template]
+        PARSE --> VARS[Replace Variables<br/>{content_type}<br/>{resources_note}<br/>{resource_focus}]
+    end
+
+    subgraph "Analysis Context"
+        TITLE[Title]
+        PRES[Presenters]
+        NOTES[User Notes]
+        SLIDES[Slide Content]
+        URLS[Resource URLs]
+        GH[GitHub URL]
+    end
+
+    subgraph "AI Prompt"
+        ROLE[Role Definition]
+        TASK[Task Description]
+        CONTENT[Content Sections]
+        SECTIONS[Analysis Sections]
+        CLOSING[Closing Instructions]
+    end
+
+    P1 --> LOAD
+    P2 --> LOAD
+    P3 --> LOAD
+    P4 --> LOAD
+
+    TITLE --> VARS
+    PRES --> VARS
+    NOTES --> VARS
+    SLIDES --> VARS
+    URLS --> VARS
+    GH --> VARS
+
+    VARS --> ROLE
+    VARS --> TASK
+    VARS --> CONTENT
+    VARS --> SECTIONS
+    VARS --> CLOSING
+
+    ROLE --> AI[Send to AI Provider]
+    TASK --> AI
+    CONTENT --> AI
+    SECTIONS --> AI
+    CLOSING --> AI
+
+    AI --> OUTPUT[Analysis Output]
+
+    style P1 fill:#e1f5ff,stroke:#01579b
+    style P2 fill:#e8f5e9,stroke:#1b5e20
+    style P3 fill:#fff3e0,stroke:#e65100
+    style P4 fill:#f3e5f5,stroke:#4a148c
+```
+
+### Built-in Templates
+
+1. **Pre-Sales Engineer** (`presales_engineer.json`)
+   - Focus: Client value, sales opportunities, relationship building
+   - Best for: Pre-sales teams, sales engineers, solution architects
+
+2. **Enterprise Network Engineer** (`network_engineer.json`)
+   - Focus: Architecture, implementation, troubleshooting
+   - Best for: Network engineers, infrastructure teams, operations
+
+3. **Security Analyst** (`security_analyst.json`)
+   - Focus: Threats, vulnerabilities, defensive strategies
+   - Best for: Security teams, compliance officers, risk analysts
+
+### Creating Custom Prompts
+
+1. Create a new JSON file in the `prompts/` directory (e.g., `prompts/devops_engineer.json`)
+
+2. Use this template structure:
+
+```json
+{
+  "name": "Your Role Name",
+  "description": "Brief description of this analysis perspective",
+  "role": "role description for AI (e.g., 'devops automation specialist')",
+  "task_description": "Analyze this {content_type}{resources_note} and provide insights for...",
+  "sections": [
+    {
+      "title": "SECTION NAME",
+      "instruction": "What the AI should provide in this section"
+    },
+    {
+      "title": "SECTION WITH SUBSECTIONS",
+      "subsections": [
+        {
+          "title": "Subsection Title",
+          "instruction": "Specific guidance for this subsection"
+        }
+      ]
+    }
+  ],
+  "closing": "Final instructions for tone and focus"
+}
+```
+
+3. **Template Variables** (automatically replaced):
+   - `{content_type}` - "presentation" or "technical content"
+   - `{resources_note}` - Adds mention of additional resources if provided
+   - `{resource_focus}` - Adds context about resource usage
+
+4. **Restart the app** to see your new template in the dropdown
+
+### Example: Creating a DevOps Engineer Template
+
+```json
+{
+  "name": "DevOps Engineer",
+  "description": "Analyze for CI/CD, automation, and infrastructure as code",
+  "role": "devops automation specialist",
+  "task_description": "Analyze this {content_type}{resources_note} for DevOps practices, automation opportunities, and infrastructure considerations.{resource_focus}",
+  "sections": [
+    {
+      "title": "DEVOPS OVERVIEW",
+      "instruction": "Summarize the key DevOps concepts and practices discussed."
+    },
+    {
+      "title": "AUTOMATION OPPORTUNITIES",
+      "instruction": "Identify processes that can be automated and suggest tools/approaches."
+    },
+    {
+      "title": "CI/CD PIPELINE CONSIDERATIONS",
+      "subsections": [
+        {
+          "title": "Build & Test Automation",
+          "instruction": "Describe build and testing strategies."
+        },
+        {
+          "title": "Deployment Strategies",
+          "instruction": "Outline deployment approaches and rollback procedures."
+        }
+      ]
+    }
+  ],
+  "closing": "Focus on practical automation and operational efficiency."
+}
+```
+
+### Tips for Custom Prompts
+
+- **Be Specific**: Clear instructions produce better results
+- **Structure Matters**: Organize sections logically for your workflow
+- **Test Iteratively**: Try different prompts and refine based on results
+- **Share Templates**: Contribute useful templates back to the community!
+
 ## Project Structure
+
+### Directory Layout
 
 ```
 summerizer/
@@ -217,6 +406,81 @@ summerizer/
 │   └── batch_analysis.py     # Batch processing example
 ├── outputs/                  # Generated files
 └── uploads/                  # Temporary upload storage
+```
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        WEB[Web Browser]
+        API[API Clients<br/>Python/Bash/cURL]
+    end
+
+    subgraph "Flask Application (app.py)"
+        ROUTES[Routes & Endpoints]
+        WEB_ROUTES[Web Routes<br/>/analyze, /download]
+        API_ROUTES[REST API<br/>/api/v1/analyze, /api/v1/prompts]
+        ROUTES --> WEB_ROUTES
+        ROUTES --> API_ROUTES
+    end
+
+    subgraph "Processing Layer (utils/)"
+        DOC[document_parser.py<br/>PDF/PPTX Extraction]
+        WEB_SCRAPE[web_scraper.py<br/>URL Content Fetch]
+        URL_DL[url_downloader.py<br/>Download from URLs]
+        PROMPT[prompt_loader.py<br/>Template Management]
+        ANALYZER[ai_analyzer.py<br/>Analysis Orchestration]
+        OUTPUT[output_generator.py<br/>MD/PDF Generation]
+    end
+
+    subgraph "AI Provider Layer (utils/ai_client.py)"
+        ANTHROPIC[Anthropic Claude]
+        OPENAI[OpenAI GPT]
+        GOOGLE[Google Gemini]
+        OLLAMA[Ollama Local]
+        XAI[xAI Grok]
+    end
+
+    subgraph "Storage"
+        UPLOADS[(uploads/)]
+        OUTPUTS[(outputs/)]
+        PROMPTS[(prompts/)]
+    end
+
+    WEB --> WEB_ROUTES
+    API --> API_ROUTES
+
+    WEB_ROUTES --> DOC
+    WEB_ROUTES --> URL_DL
+    WEB_ROUTES --> WEB_SCRAPE
+    API_ROUTES --> WEB_SCRAPE
+
+    DOC --> UPLOADS
+    URL_DL --> UPLOADS
+
+    DOC --> ANALYZER
+    WEB_SCRAPE --> ANALYZER
+    PROMPT --> ANALYZER
+    PROMPTS --> PROMPT
+
+    ANALYZER --> ANTHROPIC
+    ANALYZER --> OPENAI
+    ANALYZER --> GOOGLE
+    ANALYZER --> OLLAMA
+    ANALYZER --> XAI
+
+    ANALYZER --> OUTPUT
+    OUTPUT --> OUTPUTS
+
+    OUTPUTS --> WEB_ROUTES
+    OUTPUTS --> API_ROUTES
+
+    style ANTHROPIC fill:#f9f,stroke:#333
+    style OPENAI fill:#9ff,stroke:#333
+    style GOOGLE fill:#ff9,stroke:#333
+    style OLLAMA fill:#9f9,stroke:#333
+    style XAI fill:#f99,stroke:#333
 ```
 
 ## Configuration
@@ -302,6 +566,54 @@ For issues and questions:
 ## REST API
 
 The Presentation Intelligence Tool provides a REST API for programmatic access. The API is ideal for integration with other tools, automation, and batch processing.
+
+### API Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Flask API<br/>/api/v1/analyze
+    participant Scraper as web_scraper.py
+    participant Prompt as prompt_loader.py
+    participant Analyzer as ai_analyzer.py
+    participant AI as AI Provider<br/>(Claude/GPT/Gemini/etc)
+
+    Client->>API: POST /api/v1/analyze<br/>{title, presenters, notes, resource_urls, prompt_template}
+
+    API->>API: Validate required fields<br/>(title, presenters, notes, resource_urls)
+
+    alt Validation Failed
+        API-->>Client: 400 Bad Request<br/>{success: false, error: "..."}
+    end
+
+    API->>Scraper: fetch_multiple_urls(resource_urls)
+
+    loop For each URL
+        Scraper->>Scraper: Fetch & extract content
+    end
+
+    Scraper-->>API: {success: true, resources: [...], failed_urls: [...]}
+
+    alt No Resources Fetched
+        API-->>Client: 400 Bad Request<br/>{success: false, error: "Could not fetch URLs"}
+    end
+
+    API->>Prompt: load_prompt_template(prompt_template)
+    Prompt-->>API: Template JSON
+
+    API->>Analyzer: analyze_presentation(title, presenters, notes, resources, template)
+
+    Analyzer->>Analyzer: Build prompt from template
+
+    Analyzer->>AI: Send prompt with content
+    AI-->>Analyzer: Analysis response
+
+    Analyzer-->>API: {success: true, raw_response: "..."}
+
+    API->>API: Build response with metadata
+
+    API-->>Client: 200 OK<br/>{success: true, analysis: "...", metadata: {...}}
+```
 
 ### API Endpoints
 
@@ -560,102 +872,3 @@ def api_analyze():
 
 **Version**: 2.1
 **Last Updated**: 2025
-
-## Custom Analysis Prompts
-
-The tool supports customizable analysis prompts for different roles and perspectives. You can use built-in templates or create your own.
-
-### Built-in Templates
-
-1. **Pre-Sales Engineer** (`presales_engineer.json`)
-   - Focus: Client value, sales opportunities, relationship building
-   - Best for: Pre-sales teams, sales engineers, solution architects
-
-2. **Enterprise Network Engineer** (`network_engineer.json`)
-   - Focus: Architecture, implementation, troubleshooting
-   - Best for: Network engineers, infrastructure teams, operations
-
-3. **Security Analyst** (`security_analyst.json`)
-   - Focus: Threats, vulnerabilities, defensive strategies
-   - Best for: Security teams, compliance officers, risk analysts
-
-### Creating Custom Prompts
-
-1. Create a new JSON file in the `prompts/` directory (e.g., `prompts/devops_engineer.json`)
-
-2. Use this template structure:
-
-```json
-{
-  "name": "Your Role Name",
-  "description": "Brief description of this analysis perspective",
-  "role": "role description for AI (e.g., 'devops automation specialist')",
-  "task_description": "Analyze this {content_type}{resources_note} and provide insights for...",
-  "sections": [
-    {
-      "title": "SECTION NAME",
-      "instruction": "What the AI should provide in this section"
-    },
-    {
-      "title": "SECTION WITH SUBSECTIONS",
-      "subsections": [
-        {
-          "title": "Subsection Title",
-          "instruction": "Specific guidance for this subsection"
-        }
-      ]
-    }
-  ],
-  "closing": "Final instructions for tone and focus"
-}
-```
-
-3. **Template Variables** (automatically replaced):
-   - `{content_type}` - "presentation" or "technical content"
-   - `{resources_note}` - Adds mention of additional resources if provided
-   - `{resource_focus}` - Adds context about resource usage
-
-4. **Restart the app** to see your new template in the dropdown
-
-### Example: Creating a DevOps Engineer Template
-
-```json
-{
-  "name": "DevOps Engineer",
-  "description": "Analyze for CI/CD, automation, and infrastructure as code",
-  "role": "devops automation specialist",
-  "task_description": "Analyze this {content_type}{resources_note} for DevOps practices, automation opportunities, and infrastructure considerations.{resource_focus}",
-  "sections": [
-    {
-      "title": "DEVOPS OVERVIEW",
-      "instruction": "Summarize the key DevOps concepts and practices discussed."
-    },
-    {
-      "title": "AUTOMATION OPPORTUNITIES",
-      "instruction": "Identify processes that can be automated and suggest tools/approaches."
-    },
-    {
-      "title": "CI/CD PIPELINE CONSIDERATIONS",
-      "subsections": [
-        {
-          "title": "Build & Test Automation",
-          "instruction": "Describe build and testing strategies."
-        },
-        {
-          "title": "Deployment Strategies",
-          "instruction": "Outline deployment approaches and rollback procedures."
-        }
-      ]
-    }
-  ],
-  "closing": "Focus on practical automation and operational efficiency."
-}
-```
-
-### Tips for Custom Prompts
-
-- **Be Specific**: Clear instructions produce better results
-- **Structure Matters**: Organize sections logically for your workflow
-- **Test Iteratively**: Try different prompts and refine based on results
-- **Share Templates**: Contribute useful templates back to the community!
-
