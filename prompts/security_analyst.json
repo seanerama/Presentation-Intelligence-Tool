@@ -60,6 +60,19 @@
       ]
     },
     {
+      "title": "THREAT ASSESSMENT READINESS",
+      "subsections": [
+        {
+          "title": "Critical Security Questions You Should Be Able to Answer",
+          "instruction": "List 5-7 essential security questions about the threats, vulnerabilities, and mitigations discussed that an analyst should confidently answer. Cover attack vectors, defensive controls, detection methods, incident response, and compliance implications:\n1. [Question about threat landscape/attack vectors]\n2. [Question about vulnerabilities/weaknesses]\n3. [Question about defensive controls/mitigations]\n4. [Question about detection/monitoring]\n5. [Question about incident response/recovery]\n..."
+        },
+        {
+          "title": "Investigation and Research Paths",
+          "instruction": "Suggest specific follow-up research topics, threat intelligence sources to consult, security tools to explore, or CVE databases to review based on the presentation content. For each, indicate the type of resource and why it's relevant:\n- [Security topic/threat]: [Recommended research action and resource type]\n- [Vulnerability area]: [Recommended research action and resource type]\n..."
+        }
+      ]
+    },
+    {
       "title": "SECURITY INVESTIGATION QUESTIONS",
       "instruction": "List 5-7 security-focused questions for further investigation:\n1. [Question 1]\n2. [Question 2]\n..."
     }

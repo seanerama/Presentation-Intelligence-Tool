@@ -64,6 +64,19 @@
       ]
     },
     {
+      "title": "KNOWLEDGE CHECK",
+      "subsections": [
+        {
+          "title": "Key Questions You Should Be Able to Answer",
+          "instruction": "List 5-7 essential questions that an engineer should confidently answer after reviewing this content. Focus on practical implementation understanding, design decisions, and operational knowledge:\n1. [Question about core architecture/design]\n2. [Question about implementation approach]\n3. [Question about troubleshooting/operations]\n4. [Question about scalability/performance]\n5. [Question about integration/compatibility]\n..."
+        },
+        {
+          "title": "Follow-Up Topics for Deeper Learning",
+          "instruction": "For each major technical area covered, suggest 2-3 specific topics for further exploration. Include recommended resource types (official documentation, RFC standards, lab environments, training courses) where applicable:\n- [Technology Area 1]: [Suggested deep-dive topics and resource types]\n- [Technology Area 2]: [Suggested deep-dive topics and resource types]\n..."
+        }
+      ]
+    },
+    {
       "title": "TECHNICAL QUESTIONS FOR DEEPER UNDERSTANDING",
       "instruction": "List 5-7 technical questions to explore implementation details:\n1. [Question 1]\n2. [Question 2]\n..."
     }

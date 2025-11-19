@@ -47,6 +47,19 @@
       ]
     },
     {
+      "title": "CLIENT CONVERSATION READINESS",
+      "subsections": [
+        {
+          "title": "Questions You Should Be Prepared to Answer",
+          "instruction": "List 5-7 key client questions you should confidently answer based on this presentation. Cover technical capabilities, business value, ROI justification, competitive positioning, and implementation timelines:\n1. [Question about business value/ROI]\n2. [Question about technical capabilities]\n3. [Question about implementation approach]\n4. [Question about competitive advantage]\n5. [Question about customer success/case studies]\n..."
+        },
+        {
+          "title": "Areas Requiring Additional Research",
+          "instruction": "Identify specific topics that need deeper investigation before client conversations. For each, suggest follow-up actions (e.g., consult with product team, review case studies, test in lab environment, attend technical deep-dive):\n- [Topic requiring research]: [Suggested follow-up action]\n- [Topic requiring research]: [Suggested follow-up action]\n..."
+        }
+      ]
+    },
+    {
       "title": "INTELLIGENT FOLLOW-UP QUESTIONS",
       "instruction": "List 5-7 questions that will help you deepen your understanding and identify sales opportunities:\n1. [Question 1]\n2. [Question 2]\n..."
     }
