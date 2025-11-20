@@ -10,6 +10,7 @@ The Presentation Intelligence Tool is a Flask-based web application that analyze
 
 - **Flexible Input Options**:
   - Upload PDF or PPTX presentation files (up to 50MB)
+  - Upload presentation transcripts (TXT or VTT format)
   - Import presentations from URLs
   - Analyze web-based resources (lab guides, documentation)
   - Or combine all of the above!
@@ -158,27 +159,32 @@ OLLAMA_MODEL=llama3.1
 ```mermaid
 graph TD
     A[Start: Open http://localhost:5000] --> B[Fill in Form]
-    B --> C{Slide Deck Source?}
-    C -->|Upload File| D[Upload PDF/PPTX]
-    C -->|URL Import| E[Provide Deck URL]
-    C -->|None| F[Skip Deck]
-    D --> G[Extract Text from Deck]
-    E --> G
-    F --> H[Process Additional Resources]
-    G --> H
-    H --> I{Additional URLs Provided?}
-    I -->|Yes| J[Fetch Content from URLs]
-    I -->|No| K[Skip Resource Fetch]
-    J --> L[Combine All Content]
-    K --> L
-    L --> M[Send to AI Provider]
-    M --> N[Generate Analysis]
-    N --> O[Create MD & PDF Outputs]
-    O --> P[Display Results]
-    P --> Q{Download?}
-    Q -->|Markdown| R[Download .md File]
-    Q -->|PDF| S[Download .pdf File]
-    Q -->|Done| T[End]
+    B --> C{Content Source?}
+    C -->|Upload File| D[Upload PDF/PPTX/TXT/VTT]
+    C -->|URL Import| E[Provide Content URL]
+    C -->|None| F[Skip Upload]
+    D --> G{File Type?}
+    G -->|PDF/PPTX| H[Extract Text from Slides]
+    G -->|TXT| I[Read Plain Text]
+    G -->|VTT| J[Parse & Clean VTT]
+    H --> K[Process Additional Resources]
+    I --> K
+    J --> K
+    E --> K
+    F --> K
+    K --> L{Additional URLs Provided?}
+    L -->|Yes| M[Fetch Content from URLs]
+    L -->|No| N[Skip Resource Fetch]
+    M --> O[Combine All Content]
+    N --> O
+    O --> P[Send to AI Provider]
+    P --> Q[Generate Analysis]
+    Q --> R[Create MD & PDF Outputs]
+    R --> S[Display Results]
+    S --> T{Download?}
+    T -->|Markdown| U[Download .md File]
+    T -->|PDF| V[Download .pdf File]
+    T -->|Done| W[End]
 ```
 
 ### Step-by-Step Instructions
@@ -193,17 +199,70 @@ graph TD
    - **GitHub Repository URL** (optional)
    - **Additional Resource URLs** (optional) - lab guides, docs, articles (one per line)
    - **Slide Deck** (optional):
-     - Upload a file (PDF/PPTX)
+     - Upload a file (PDF or PPTX)
      - Import from URL
-     - Or skip if analyzing only web resources
+     - Or skip if not available
+   - **Presentation Transcript** (optional):
+     - Upload a file (TXT or VTT)
+     - Import from URL
+     - Or skip if not available
+   - **Note**: You can upload both a slide deck AND a transcript, or just one, or neither (if you have resource URLs)
 
 3. **Submit** - The tool will:
-   - Extract text from presentations
+   - Extract text from presentations and transcripts
    - Fetch content from provided URLs
    - Analyze everything using your chosen AI provider
    - Generate comprehensive insights
 
 4. **Download** results as Markdown or PDF
+
+### Transcript Support
+
+The tool supports presentation transcripts in addition to slide decks, enabling you to analyze both the visual content and spoken words from presentations.
+
+**Supported Transcript Formats:**
+
+1. **Plain Text (.txt)**
+   - Simple text transcripts
+   - Any text format works
+   - Ideal for manual transcripts or cleaned-up text
+
+2. **WebVTT (.vtt)**
+   - Video subtitle/caption format
+   - Automatically removes timestamps and cue identifiers
+   - Extracts only the spoken content
+   - Common format from YouTube, Vimeo, and other platforms
+
+**Example VTT File:**
+```vtt
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:05.000
+Welcome to today's presentation on network automation.
+
+2
+00:00:05.000 --> 00:00:10.000
+We'll be covering Python scripting and API integration.
+```
+
+**Upload Options:**
+
+You can now upload content in multiple ways:
+- **Slide Deck Only** - Analyze just the slides (PDF/PPTX)
+- **Transcript Only** - Analyze just the spoken content (TXT/VTT)
+- **Both Slide Deck and Transcript** - Get the most comprehensive analysis by combining both
+- **Resource URLs Only** - Analyze web content without uploading files
+- **Any Combination** - Mix and match slides, transcripts, and URLs as needed
+
+**How to Use Transcripts:**
+1. Obtain a transcript from your video platform (YouTube, Zoom, etc.)
+2. Upload the .txt or .vtt file in the "Presentation Transcript" section
+3. Optionally, also upload the slide deck in the "Slide Deck" section
+4. Add your notes and context
+5. The tool will analyze all content together for comprehensive insights
+
+**Tip:** When you upload both a slide deck and transcript, the tool clearly separates them in the analysis, helping the AI understand both visual and spoken content!
 
 ## Custom Analysis Prompts
 
@@ -387,7 +446,7 @@ summerizer/
 │   ├── ai_client.py           # Unified AI provider interface
 │   ├── ai_analyzer.py         # Analysis logic
 │   ├── prompt_loader.py       # Prompt template management
-│   ├── document_parser.py     # PDF/PPTX extraction
+│   ├── document_parser.py     # PDF/PPTX/TXT/VTT extraction
 │   ├── url_downloader.py      # Download presentations from URLs
 │   ├── web_scraper.py         # Fetch web resources
 │   └── output_generator.py    # MD/PDF generation
@@ -521,9 +580,10 @@ graph TB
 - Check that python-dotenv is installed: `uv add python-dotenv`
 
 **"Could not extract content from presentation"**
-- Verify the file is a valid PDF or PPTX
+- Verify the file is a valid PDF, PPTX, TXT, or VTT
 - Check that the file is not password-protected
 - Ensure the file size is under 50MB
+- For VTT files, ensure they follow the WebVTT standard format
 
 **WeasyPrint installation issues**
 - WeasyPrint requires system dependencies

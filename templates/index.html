@@ -72,21 +72,44 @@
                 <label>Slide Deck <span class="optional">(Optional)</span></label>
                 <div class="deck-input-options">
                     <div class="input-option">
-                        <input type="radio" id="upload-option" name="deck_source" value="upload" checked>
-                        <label for="upload-option">Upload File</label>
+                        <input type="radio" id="deck-upload-option" name="deck_source" value="upload" checked>
+                        <label for="deck-upload-option">Upload File</label>
                         <input type="file" id="deck" name="deck" accept=".pdf,.pptx">
                         <small class="help-text">PDF or PPTX format, maximum 50MB</small>
                     </div>
                     <div class="input-option">
-                        <input type="radio" id="url-option" name="deck_source" value="url">
-                        <label for="url-option">Import from URL</label>
+                        <input type="radio" id="deck-url-option" name="deck_source" value="url">
+                        <label for="deck-url-option">Import from URL</label>
                         <input type="url" id="deck_url" name="deck_url" placeholder="https://example.com/presentation.pdf">
                         <small class="help-text">Direct link to PDF or PPTX file</small>
                     </div>
                     <div class="input-option">
-                        <input type="radio" id="none-option" name="deck_source" value="none">
-                        <label for="none-option">No Slide Deck</label>
-                        <small class="help-text">Analyze only the additional resource URLs provided above</small>
+                        <input type="radio" id="deck-none-option" name="deck_source" value="none">
+                        <label for="deck-none-option">No Slide Deck</label>
+                        <small class="help-text">Skip slide deck upload</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Presentation Transcript <span class="optional">(Optional)</span></label>
+                <div class="deck-input-options">
+                    <div class="input-option">
+                        <input type="radio" id="transcript-upload-option" name="transcript_source" value="upload" checked>
+                        <label for="transcript-upload-option">Upload File</label>
+                        <input type="file" id="transcript" name="transcript" accept=".txt,.vtt">
+                        <small class="help-text">TXT or VTT format, maximum 50MB</small>
+                    </div>
+                    <div class="input-option">
+                        <input type="radio" id="transcript-url-option" name="transcript_source" value="url">
+                        <label for="transcript-url-option">Import from URL</label>
+                        <input type="url" id="transcript_url" name="transcript_url" placeholder="https://example.com/transcript.vtt">
+                        <small class="help-text">Direct link to TXT or VTT file</small>
+                    </div>
+                    <div class="input-option">
+                        <input type="radio" id="transcript-none-option" name="transcript_source" value="none">
+                        <label for="transcript-none-option">No Transcript</label>
+                        <small class="help-text">Skip transcript upload</small>
                     </div>
                 </div>
             </div>
@@ -95,34 +118,54 @@
 
             <script>
                 // Handle deck source switching
-                const uploadOption = document.getElementById('upload-option');
-                const urlOption = document.getElementById('url-option');
-                const noneOption = document.getElementById('none-option');
-                const fileInput = document.getElementById('deck');
-                const urlInput = document.getElementById('deck_url');
+                const deckUploadOption = document.getElementById('deck-upload-option');
+                const deckUrlOption = document.getElementById('deck-url-option');
+                const deckNoneOption = document.getElementById('deck-none-option');
+                const deckFileInput = document.getElementById('deck');
+                const deckUrlInput = document.getElementById('deck_url');
 
-                uploadOption.addEventListener('change', function() {
+                deckUploadOption.addEventListener('change', function() {
                     if (this.checked) {
-                        fileInput.required = false;
-                        urlInput.required = false;
-                        urlInput.value = '';
+                        deckUrlInput.value = '';
                     }
                 });
 
-                urlOption.addEventListener('change', function() {
+                deckUrlOption.addEventListener('change', function() {
                     if (this.checked) {
-                        urlInput.required = false;
-                        fileInput.required = false;
-                        fileInput.value = '';
+                        deckFileInput.value = '';
                     }
                 });
 
-                noneOption.addEventListener('change', function() {
+                deckNoneOption.addEventListener('change', function() {
                     if (this.checked) {
-                        fileInput.required = false;
-                        urlInput.required = false;
-                        fileInput.value = '';
-                        urlInput.value = '';
+                        deckFileInput.value = '';
+                        deckUrlInput.value = '';
+                    }
+                });
+
+                // Handle transcript source switching
+                const transcriptUploadOption = document.getElementById('transcript-upload-option');
+                const transcriptUrlOption = document.getElementById('transcript-url-option');
+                const transcriptNoneOption = document.getElementById('transcript-none-option');
+                const transcriptFileInput = document.getElementById('transcript');
+                const transcriptUrlInput = document.getElementById('transcript_url');
+
+                transcriptUploadOption.addEventListener('change', function() {
+                    if (this.checked) {
+                        transcriptUrlInput.value = '';
+                    }
+                });
+
+                transcriptUrlOption.addEventListener('change', function() {
+                    if (this.checked) {
+                        transcriptFileInput.value = '';
+                    }
+                });
+
+                transcriptNoneOption.addEventListener('change', function() {
+                    if (this.checked) {
+                        transcriptFileInput.value = '';
+                        transcriptUrlInput.value = '';
                     }
                 });
             </script>

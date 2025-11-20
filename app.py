@@ -31,12 +31,24 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 
 # Allowed file extensions
-ALLOWED_EXTENSIONS = {'pdf', 'pptx'}
+ALLOWED_DECK_EXTENSIONS = {'pdf', 'pptx'}
+ALLOWED_TRANSCRIPT_EXTENSIONS = {'txt', 'vtt'}
+ALLOWED_EXTENSIONS = ALLOWED_DECK_EXTENSIONS | ALLOWED_TRANSCRIPT_EXTENSIONS
 
 
 def allowed_file(filename):
     """Check if file has allowed extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def allowed_deck_file(filename):
+    """Check if file has allowed deck extension (PDF, PPTX)."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_DECK_EXTENSIONS
+
+
+def allowed_transcript_file(filename):
+    """Check if file has allowed transcript extension (TXT, VTT)."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_TRANSCRIPT_EXTENSIONS
 
 
 @app.route('/', methods=['GET'])
@@ -48,10 +60,10 @@ def index():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     """
-    Process uploaded presentation:
+    Process uploaded presentation and/or transcript:
     1. Validate form inputs
-    2. Save uploaded file temporarily
-    3. Extract content from file
+    2. Save uploaded files temporarily
+    3. Extract content from files
     4. Send to AI for analysis
     5. Generate output files
     6. Render results page with download links
@@ -75,101 +87,195 @@ def analyze():
             resource_urls = [url.strip() for url in resource_urls_text.split('\n') if url.strip()]
             logger.info(f"Found {len(resource_urls)} resource URLs to fetch")
 
-        # Check deck source (upload, URL, or none)
-        deck_source = request.form.get('deck_source', 'upload')
-        file_path = None
-        file_ext = None
-        slide_content = None
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        files_to_cleanup = []
 
-        if deck_source == 'none':
-            # No deck provided - must have resource URLs
-            if not resource_urls:
-                flash('Please provide either a slide deck or additional resource URLs to analyze.', 'error')
-                return redirect(url_for('index'))
-            logger.info("No slide deck provided - analyzing resource URLs only")
-            slide_content = ""  # Empty slide content
+        # Process slide deck
+        deck_source = request.form.get('deck_source', 'none')
+        slide_content = ""
+
+        if deck_source == 'upload':
+            # Handle deck file upload
+            if 'deck' in request.files:
+                deck_file = request.files['deck']
+                if deck_file.filename != '':
+                    if not allowed_deck_file(deck_file.filename):
+                        flash('Invalid deck file type. Only PDF and PPTX files are supported.', 'error')
+                        return redirect(url_for('index'))
+
+                    # Save deck file
+                    filename = secure_filename(deck_file.filename)
+                    file_ext = filename.rsplit('.', 1)[1].lower()
+                    temp_filename = f"{timestamp}_deck_{filename}"
+                    deck_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+
+                    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                    deck_file.save(deck_path)
+                    files_to_cleanup.append(deck_path)
+                    logger.info(f"Deck file saved: {deck_path}")
+
+                    # Extract content from deck
+                    logger.info("Extracting content from slide deck...")
+                    extracted = extract_content(deck_path, file_ext)
+
+                    if 'error' in extracted:
+                        for f in files_to_cleanup:
+                            if os.path.exists(f):
+                                os.remove(f)
+                        flash(f'Could not extract content from slide deck: {extracted.get("error")}', 'error')
+                        return redirect(url_for('index'))
+
+                    if not extracted.get('text'):
+                        for f in files_to_cleanup:
+                            if os.path.exists(f):
+                                os.remove(f)
+                        flash('No text could be extracted from the slide deck. The file may be image-based or empty.', 'error')
+                        return redirect(url_for('index'))
+
+                    slide_content = extracted['text']
+                    logger.info(f"Extracted {len(slide_content)} characters from slide deck")
 
         elif deck_source == 'url':
-            # Handle URL import
+            # Handle deck URL import
             deck_url = request.form.get('deck_url', '').strip()
+            if deck_url:
+                logger.info(f"Downloading slide deck from URL: {deck_url}")
+                download_result = download_file_from_url(deck_url, app.config['UPLOAD_FOLDER'])
 
-            if not deck_url:
-                flash('Please provide a URL to the presentation file.', 'error')
-                return redirect(url_for('index'))
+                if not download_result['success']:
+                    flash(f"Failed to download slide deck from URL: {download_result['error']}", 'error')
+                    return redirect(url_for('index'))
 
-            logger.info(f"Downloading presentation from URL: {deck_url}")
+                deck_path = download_result['file_path']
+                files_to_cleanup.append(deck_path)
+                filename = download_result['filename']
+                file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
 
-            # Download file from URL
-            download_result = download_file_from_url(deck_url, app.config['UPLOAD_FOLDER'])
+                if not file_ext or file_ext not in ALLOWED_DECK_EXTENSIONS:
+                    for f in files_to_cleanup:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    flash('Invalid file type from URL. Only PDF and PPTX files are supported.', 'error')
+                    return redirect(url_for('index'))
 
-            if not download_result['success']:
-                flash(f"Failed to download file from URL: {download_result['error']}", 'error')
-                return redirect(url_for('index'))
+                # Extract content from deck
+                logger.info("Extracting content from downloaded slide deck...")
+                extracted = extract_content(deck_path, file_ext)
 
-            file_path = download_result['file_path']
-            filename = download_result['filename']
-            file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+                if 'error' in extracted or not extracted.get('text'):
+                    for f in files_to_cleanup:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    flash('Could not extract content from the downloaded slide deck.', 'error')
+                    return redirect(url_for('index'))
 
-            if not file_ext or file_ext not in ALLOWED_EXTENSIONS:
-                # Clean up downloaded file
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                flash('Invalid file type. Only PDF and PPTX files are supported.', 'error')
-                return redirect(url_for('index'))
+                slide_content = extracted['text']
+                logger.info(f"Extracted {len(slide_content)} characters from downloaded deck")
 
-            logger.info(f"File downloaded: {file_path}")
+        # Process transcript
+        transcript_source = request.form.get('transcript_source', 'none')
+        transcript_content = ""
 
-        else:
-            # Handle file upload
-            if 'deck' not in request.files:
-                flash('No file uploaded.', 'error')
-                return redirect(url_for('index'))
+        if transcript_source == 'upload':
+            # Handle transcript file upload
+            if 'transcript' in request.files:
+                transcript_file = request.files['transcript']
+                if transcript_file.filename != '':
+                    if not allowed_transcript_file(transcript_file.filename):
+                        for f in files_to_cleanup:
+                            if os.path.exists(f):
+                                os.remove(f)
+                        flash('Invalid transcript file type. Only TXT and VTT files are supported.', 'error')
+                        return redirect(url_for('index'))
 
-            file = request.files['deck']
+                    # Save transcript file
+                    filename = secure_filename(transcript_file.filename)
+                    file_ext = filename.rsplit('.', 1)[1].lower()
+                    temp_filename = f"{timestamp}_transcript_{filename}"
+                    transcript_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
 
-            if file.filename == '':
-                flash('No file selected.', 'error')
-                return redirect(url_for('index'))
+                    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                    transcript_file.save(transcript_path)
+                    files_to_cleanup.append(transcript_path)
+                    logger.info(f"Transcript file saved: {transcript_path}")
 
-            if not allowed_file(file.filename):
-                flash('Invalid file type. Only PDF and PPTX files are supported.', 'error')
-                return redirect(url_for('index'))
+                    # Extract content from transcript
+                    logger.info("Extracting content from transcript...")
+                    extracted = extract_content(transcript_path, file_ext)
 
-            # Save uploaded file
-            filename = secure_filename(file.filename)
-            file_ext = filename.rsplit('.', 1)[1].lower()
-            temp_filename = f"{timestamp}_{filename}"
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+                    if 'error' in extracted:
+                        for f in files_to_cleanup:
+                            if os.path.exists(f):
+                                os.remove(f)
+                        flash(f'Could not extract content from transcript: {extracted.get("error")}', 'error')
+                        return redirect(url_for('index'))
 
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            file.save(file_path)
-            logger.info(f"File saved: {file_path}")
+                    if not extracted.get('text'):
+                        for f in files_to_cleanup:
+                            if os.path.exists(f):
+                                os.remove(f)
+                        flash('No text could be extracted from the transcript.', 'error')
+                        return redirect(url_for('index'))
 
-        # Extract content from file if we have one
-        if deck_source != 'none' and file_path:
-            logger.info("Extracting content from presentation...")
-            extracted = extract_content(file_path, file_ext)
+                    transcript_content = extracted['text']
+                    logger.info(f"Extracted {len(transcript_content)} characters from transcript")
 
-            if 'error' in extracted:
-                error_msg = extracted.get('error', 'Unknown error')
-                logger.error(f"Extraction error: {error_msg}")
-                flash(f'Could not extract content from presentation: {error_msg}', 'error')
-                # Clean up uploaded file
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                return redirect(url_for('index'))
+        elif transcript_source == 'url':
+            # Handle transcript URL import
+            transcript_url = request.form.get('transcript_url', '').strip()
+            if transcript_url:
+                logger.info(f"Downloading transcript from URL: {transcript_url}")
+                download_result = download_file_from_url(transcript_url, app.config['UPLOAD_FOLDER'])
 
-            if not extracted.get('text'):
-                logger.warning(f"No text extracted. Pages/Slides: {extracted.get('pages', extracted.get('slides', 0))}, Has images: {extracted.get('has_images', False)}")
-                flash('No text could be extracted from the presentation. The file may be image-based (scanned slides) or empty.', 'error')
-                # Clean up uploaded file
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                return redirect(url_for('index'))
+                if not download_result['success']:
+                    for f in files_to_cleanup:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    flash(f"Failed to download transcript from URL: {download_result['error']}", 'error')
+                    return redirect(url_for('index'))
 
-            slide_content = extracted['text']
-            logger.info(f"Extracted {len(slide_content)} characters of text")
+                transcript_path = download_result['file_path']
+                files_to_cleanup.append(transcript_path)
+                filename = download_result['filename']
+                file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+
+                if not file_ext or file_ext not in ALLOWED_TRANSCRIPT_EXTENSIONS:
+                    for f in files_to_cleanup:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    flash('Invalid file type from URL. Only TXT and VTT files are supported for transcripts.', 'error')
+                    return redirect(url_for('index'))
+
+                # Extract content from transcript
+                logger.info("Extracting content from downloaded transcript...")
+                extracted = extract_content(transcript_path, file_ext)
+
+                if 'error' in extracted or not extracted.get('text'):
+                    for f in files_to_cleanup:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    flash('Could not extract content from the downloaded transcript.', 'error')
+                    return redirect(url_for('index'))
+
+                transcript_content = extracted['text']
+                logger.info(f"Extracted {len(transcript_content)} characters from downloaded transcript")
+
+        # Combine slide and transcript content
+        combined_content_parts = []
+        if slide_content:
+            combined_content_parts.append(f"=== SLIDE DECK CONTENT ===\n\n{slide_content}")
+        if transcript_content:
+            combined_content_parts.append(f"=== PRESENTATION TRANSCRIPT ===\n\n{transcript_content}")
+
+        slide_content = "\n\n".join(combined_content_parts) if combined_content_parts else ""
+
+        # Validate we have at least one content source
+        if not slide_content and not resource_urls:
+            for f in files_to_cleanup:
+                if os.path.exists(f):
+                    os.remove(f)
+            flash('Please provide at least one content source: slide deck, transcript, or resource URLs.', 'error')
+            return redirect(url_for('index'))
 
         # Fetch additional resources if URLs provided
         fetched_resources = None
@@ -184,7 +290,7 @@ def analyze():
             else:
                 flash("Warning: Could not fetch any of the provided resource URLs", 'warning')
 
-        # Analyze with Claude
+        # Analyze with AI
         logger.info("Analyzing presentation with AI...")
         analysis = analyze_presentation(
             title=title,
@@ -192,15 +298,17 @@ def analyze():
             user_notes=user_notes,
             slide_content=slide_content,
             github_url=github_url if github_url else None,
-            additional_resources=fetched_resources
-        , prompt_template=prompt_template)
+            additional_resources=fetched_resources,
+            prompt_template=prompt_template
+        )
 
         if not analysis.get('success'):
             error_msg = analysis.get('error', 'Unknown error')
             flash(f'Analysis failed: {error_msg}', 'error')
-            # Clean up uploaded file if one exists
-            if file_path and os.path.exists(file_path):
-                os.remove(file_path)
+            # Clean up uploaded files
+            for f in files_to_cleanup:
+                if os.path.exists(f):
+                    os.remove(f)
             return redirect(url_for('index'))
 
         # Generate output files
@@ -223,15 +331,18 @@ def analyze():
 
         if not outputs.get('success'):
             flash('Failed to generate output files.', 'error')
-            # Clean up uploaded file if one exists
-            if file_path and os.path.exists(file_path):
-                os.remove(file_path)
+            # Clean up uploaded files
+            for f in files_to_cleanup:
+                if os.path.exists(f):
+                    os.remove(f)
             return redirect(url_for('index'))
 
-        # Clean up uploaded file if one exists
-        if file_path and os.path.exists(file_path):
-            os.remove(file_path)
-            logger.info(f"Cleaned up temporary file: {file_path}")
+        # Clean up uploaded files
+        for f in files_to_cleanup:
+            if os.path.exists(f):
+                os.remove(f)
+        if files_to_cleanup:
+            logger.info(f"Cleaned up {len(files_to_cleanup)} temporary file(s)")
 
         # Render results page
         return render_template(

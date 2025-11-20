@@ -127,13 +127,91 @@ def extract_from_pptx(file_path: str) -> Dict[str, any]:
         }
 
 
+def extract_from_transcript(file_path: str) -> Dict[str, any]:
+    """
+    Extract text from transcript files (TXT or VTT format).
+
+    Args:
+        file_path: Path to transcript file
+
+    Returns:
+        {
+            'text': str,  # All extracted text
+            'format': str,  # File format (txt or vtt)
+            'lines': int  # Number of lines
+        }
+    """
+    try:
+        logger.info(f"Opening transcript file: {file_path}")
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Determine if it's a VTT file
+        file_ext = file_path.rsplit('.', 1)[1].lower() if '.' in file_path else 'txt'
+        is_vtt = file_ext == 'vtt'
+
+        if is_vtt:
+            # Parse VTT format - remove timestamps and metadata
+            lines = content.split('\n')
+            text_lines = []
+            skip_next = False
+
+            for line in lines:
+                line = line.strip()
+
+                # Skip WEBVTT header
+                if line.startswith('WEBVTT'):
+                    continue
+
+                # Skip timestamp lines (contain -->)
+                if '-->' in line:
+                    skip_next = False
+                    continue
+
+                # Skip cue identifiers (numbers or IDs before timestamps)
+                if line and not skip_next and line[0].isdigit() and ':' not in line:
+                    skip_next = True
+                    continue
+
+                # Add actual transcript text
+                if line and not line.startswith('NOTE'):
+                    text_lines.append(line)
+                    skip_next = False
+
+            cleaned_text = '\n'.join(text_lines)
+        else:
+            # Plain text file - use as-is
+            cleaned_text = content
+
+        line_count = len(cleaned_text.split('\n'))
+        logger.info(f"Successfully extracted {len(cleaned_text)} characters from transcript ({line_count} lines)")
+
+        result = {
+            'text': cleaned_text,
+            'format': file_ext,
+            'lines': line_count
+        }
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error extracting transcript content: {str(e)}", exc_info=True)
+        return {
+            'text': '',
+            'format': '',
+            'lines': 0,
+            'error': str(e)
+        }
+
+
 def extract_content(file_path: str, file_type: str) -> Dict[str, any]:
     """
     Main entry point - routes to appropriate extractor.
 
     Args:
         file_path: Path to uploaded file
-        file_type: 'pdf' or 'pptx'
+        file_type: 'pdf', 'pptx', 'txt', or 'vtt'
 
     Returns:
         Extracted content dictionary
@@ -144,6 +222,8 @@ def extract_content(file_path: str, file_type: str) -> Dict[str, any]:
         return extract_from_pdf(file_path)
     elif file_type in ['pptx', 'ppt']:
         return extract_from_pptx(file_path)
+    elif file_type in ['txt', 'vtt']:
+        return extract_from_transcript(file_path)
     else:
         logger.error(f"Unsupported file type: {file_type}")
         return {
